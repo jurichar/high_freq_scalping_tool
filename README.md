@@ -10,6 +10,7 @@ Un bot de trading algorithmique pour le day trading avec des modèles prédictif
 - [Usage](#usage)
 - [Fonctionnalités](#fonctionnalités)
 - [Structure du Projet](#structure-du-projet)
+- [Tests](#tests)
 - [Contribuer](#contribuer)
 - [Licence](#licence)
 
@@ -70,6 +71,14 @@ Accédez à l’API sur `http://localhost:5000`
 ## 📂 Structure du Projet
 
 Consultez la structure complète dans le fichier tree.txt.
+
+## 🧪 Tests
+
+Pour exécuter les tests :
+
+```bash
+pytest
+```
 
 ## 🤝 Contribuer
 
