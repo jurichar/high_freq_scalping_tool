@@ -44,6 +44,8 @@ Guide de Développement
 	Utilisation Beautiful Soup ou Scrapy pour extraire des données de sites financiers (comme Yahoo Finance, Investing.com).
 	Cible des données comme les prix des actions, volumes, et autres indicateurs pertinents.
 
+	Utilisation de Alpha Vantage pour recuperer les ressources.
+
 Étape 2 : Traitement des Données
 
 * Nettoyage des Données :
