@@ -4,16 +4,16 @@ Un bot de trading algorithmique pour le day trading utilisant des techniques de 
 
 Table des Matières
 
-	•	Introduction
-	•	Fonctionnalités
-	•	Technologies
-	•	Guide de Développement
-	•	Étape 1 : Collecte de Données
-	•	Étape 2 : Traitement des Données
-	•	Étape 3 : Développement de l’API
-	•	Étape 4 : Implémentation de la Stratégie de Trading
-	•	Étape 5 : Exécution des Trades
-	•	Étape 6 : Surveillance et Reporting
+* Introduction
+* Technologies
+* Fonctionnalités
+* Guide de Développement
+* Étape 1 : Collecte de Données
+* Étape 2 : Traitement des Données
+* Étape 3 : Développement de l’API
+* Étape 4 : Implémentation de la Stratégie de Trading
+* Étape 5 : Exécution des Trades
+* Étape 6 : Surveillance et Reporting
 	•	Installation
 	•	Utilisation
 	•	Contributions
