@@ -1,77 +1,80 @@
-algo_day_trading
+# Algo Day Trading Bot
 
-Un bot de trading algorithmique pour le day trading avec des modèles prédictifs et des stratégies basées sur des indicateurs techniques.
+Un bot de trading algorithmique pour le day trading avec des modèles prédictifs et des stratégies basées sur des indicateurs techniques. Ce projet utilise `yfinance` pour récupérer les données, `scikit-learn` et `TensorFlow` pour les prédictions, et `Flask` pour exposer une API RESTful.
 
-Table des Matières
+## 📚 Table des Matières
 
-* Introduction
-* Technologies
-* Fonctionnalités
-* Guide de Développement
-* Étape 1 : Collecte de Données
-* Étape 2 : Traitement des Données
-* Étape 3 : Développement de l’API
-* Étape 4 : Implémentation de la Stratégie de Trading
-* Étape 5 : Exécution des Trades
-* Étape 6 : Surveillance et Reporting
-* Installation
-* Utilisation
+- [Technologies](#technologies)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [Fonctionnalités](#fonctionnalités)
+- [Structure du Projet](#structure-du-projet)
+- [Contribuer](#contribuer)
+- [Licence](#licence)
 
-Introduction
-Ce projet est un bot de trading algorithmique conçu pour effectuer des transactions sur le marché en utilisant des modèles prédictifs et des stratégies de day trading. Il collecte des données de marché, les traite, et exécute des trades en temps réel.
+## 🚀 Technologies
 
-Fonctionnalités
+- Python 3.10+
+- Flask
+- yfinance
+- scikit-learn
+- TensorFlow / PyTorch
+- pandas, NumPy
+- ccxt, alpaca-trade-api
+- Docker
 
-* Collecte automatique des données de marché via le web scraping.
-* Traitement et analyse des données avec des modèles prédictifs.
-* Exécution automatique des ordres de trading.
-* Interface RESTful pour interagir avec le bot et visualiser les résultats.
+## 📦 Installation
 
-Technologies
+Clonez le dépôt :
 
-* Python
-* Django
-* Django REST Framework
-* Beautiful Soup / Scrapy (pour le scraping)
-* Pandas (pour le traitement des données)
-* TA-Lib (pour les indicateurs techniques)
+```bash
+git clone https://github.com/ton_nom_utilisateur/algo_day_trading.git
+cd algo_day_trading
+```
 
-Guide de Développement
+Installez les dépendances :
 
-Étape 1 : Collecte de Données
+```bash
+pip install -r requirements.txt
+```
 
-* Web Scraping :
-	Utilisation Beautiful Soup ou Scrapy pour extraire des données de sites financiers (comme Yahoo Finance, Investing.com).
-	Cible des données comme les prix des actions, volumes, et autres indicateurs pertinents.
+## ⚙️ Configuration
 
-	Utilisation de Alpha Vantage pour recuperer les ressources.
+Copiez le fichier env.example en .env et configurez vos variables d’environnement :
 
-Étape 2 : Traitement des Données
+```bash
+cp env.example .env
+```
 
-* Nettoyage des Données :
-	Utilise Pandas pour nettoyer et structurer les données. Cela peut inclure le traitement des valeurs manquantes et la conversion des types de données.
-* Analyse des Données :
-	Calcule les indicateurs techniques nécessaires pour ta stratégie de trading (par exemple, moyennes mobiles, RSI).
- 
-Étape 3 : Développement de l’API
+Assurez-vous de renseigner vos clés API pour les services de données et de trading.
 
-* Créer l’API en Python :
-	Configure une API (RESTful ou non) pour l'interaction. Les utilisateurs pourront obtenir des données de marché et des informations sur les trades.
+## 🏃 Usage
 
-Étape 4 : Implémentation de la Stratégie de Trading
+Pour lancer le bot en local :
 
-* Développer ta stratégie :
-	Utilise les données traitées et les indicateurs techniques pour prendre des décisions de trading.
-	Implémente des règles pour entrer et sortir des positions.
+```bash
+python main.py
+```
 
-Étape 5 : Exécution des Trades
+Accédez à l’API sur `http://localhost:5000`
 
-* Intégration avec un courtier :
-  	Utilise une API de courtier (comme Binance ou Alpaca) pour exécuter des ordres de trading basés sur les décisions prises par ta stratégie.
+## 🔍 Fonctionnalités
 
-Étape 6 : Surveillance et Reporting
+- Récupération des données de marché via yfinance.
+- Prédictions de prix à N+1 (par exemple, 5 minutes) avec scikit-learn et TensorFlow.
+- Exécution automatisée des transactions.
+- Interface RESTful avec Flask.
+- Analyse des performances et reporting.
 
-* Surveillance des performances :
-	Crée un système pour suivre les performances du bot, enregistrer les trades effectués, et analyser les résultats.
-* Reporting :
-  	Génère des rapports réguliers pour évaluer la performance et ajuster la stratégie si nécessaire.
+## 📂 Structure du Projet
+
+Consultez la structure complète dans le fichier tree.txt.
+
+## 🤝 Contribuer
+
+Les contributions sont les bienvenues. Veuillez consulter les issues ouvertes et soumettre une pull request pour proposer vos améliorations.
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
