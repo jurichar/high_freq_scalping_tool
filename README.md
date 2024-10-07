@@ -1,40 +1,35 @@
 # Algo Day Trading Bot
 
-Un bot de trading algorithmique pour le day trading avec des modèles prédictifs et des stratégies basées sur des indicateurs techniques. Ce projet utilise `yfinance` pour récupérer les données, `scikit-learn` et `TensorFlow` pour les prédictions, et `Flask` pour exposer une API RESTful.
+An algorithmic trading bot for day trading with predictive models and strategies based on technical indicators. This project uses `yfinance` to fetch data, `scikit-learn` and `TensorFlow` for predictions, and `Flask` to expose a RESTful API.
 
 ## 📚 Table des Matières
 
-- [Technologies](#technologies)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Fonctionnalités](#fonctionnalités)
-- [Structure du Projet](#structure-du-projet)
-- [Tests](#tests)
-- [Contribuer](#contribuer)
-- [Licence](#licence)
+- [Technologies](#-technologies)
+- [Installation](#-installation)
+- [Configuration](#️-configuration)
+- [Usage](#-usage)
+- [Functionalities](#-functionalities)
+- [Tests](#-tests)
+- [Contribute](#-contribute)
 
 ## 🚀 Technologies
 
-- Python 3.10+
-- Flask
 - yfinance
+- pandas
 - scikit-learn
 - TensorFlow / PyTorch
-- pandas, NumPy
 - ccxt, alpaca-trade-api
-- Docker
 
 ## 📦 Installation
 
-Clonez le dépôt :
+Clone the repository:
 
 ```bash
-git clone https://github.com/ton_nom_utilisateur/algo_day_trading.git
+git clone https://github.com/jurichar/algo_day_trading.git
 cd algo_day_trading
 ```
 
-Installez les dépendances :
+Install the dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -42,48 +37,46 @@ pip install -r requirements.txt
 
 ## ⚙️ Configuration
 
-Copiez le fichier env.example en .env et configurez vos variables d’environnement :
+Copy the env.example file to .env and configure your environment variables:
 
 ```bash
 cp env.example .env
 ```
 
-Assurez-vous de renseigner vos clés API pour les services de données et de trading.
+Make sure to fill in your API keys for data and trading services.
 
 ## 🏃 Usage
 
-Pour lancer le bot en local :
+To start the bot, run:
 
 ```bash
 python main.py
 ```
 
-Accédez à l’API sur `http://localhost:5000`
+Access the API at `http://localhost:5000`.
 
-## 🔍 Fonctionnalités
+## 🔍 Functionalities
 
-- Récupération des données de marché via yfinance.
-- Prédictions de prix à N+1 (par exemple, 5 minutes) avec scikit-learn et TensorFlow.
-- Exécution automatisée des transactions.
-- Interface RESTful avec Flask.
-- Analyse des performances et reporting.
-
-## 📂 Structure du Projet
-
-Consultez la structure complète dans le fichier tree.txt.
+- Fetching historical data and technical indicators.
+- Predicting price at N+1 (e.g., 5 minutes) with scikit-learn and TensorFlow.
+- Automated trading execution.
+- Back-end api with Flask.
+- Performance analysis and reporting.
 
 ## 🧪 Tests
 
-Pour exécuter les tests :
+To execute the tests, run:
 
 ```bash
 pytest
 ```
 
-## 🤝 Contribuer
+or with only a specific test file:
 
-Les contributions sont les bienvenues. Veuillez consulter les issues ouvertes et soumettre une pull request pour proposer vos améliorations.
+```bash
+pytest --doctest-modules my_file.py
+```
 
-## 📄 Licence
+## 🤝 Contribute
 
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
+The project is open to contributions. Feel free to open an issue or submit a pull request.
