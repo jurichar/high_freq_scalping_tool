@@ -1,6 +1,6 @@
 algo_day_trading
 
-Un bot de trading algorithmique pour le day trading utilisant des techniques de scraping de données, des modèles prédictifs, et des stratégies basées sur des indicateurs techniques.
+Un bot de trading algorithmique pour le day trading avec des modèles prédictifs et des stratégies basées sur des indicateurs techniques.
 
 Table des Matières
 
@@ -53,8 +53,8 @@ Guide de Développement
  
 Étape 3 : Développement de l’API
 
-* Créer l’API avec Django REST Framework :
-	Configure une API RESTful pour interagir avec ton bot. Les utilisateurs pourront obtenir des données de marché et des informations sur les trades.
+* Créer l’API en Python :
+	Configure une API (RESTful ou non) pour l'interaction. Les utilisateurs pourront obtenir des données de marché et des informations sur les trades.
 
 Étape 4 : Implémentation de la Stratégie de Trading
 
