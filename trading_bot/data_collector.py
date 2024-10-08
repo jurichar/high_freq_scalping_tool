@@ -53,5 +53,5 @@ if __name__ == "__main__":
     import doctest
 
     doctest.testmod()
-    data = get_stock_data("MSFT", "5d", save_to_csv=True)
+    data = get_stock_data("MSFT", "3mo", save_to_csv=True)
     print(data)
