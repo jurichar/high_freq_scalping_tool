@@ -20,7 +20,7 @@ import pandas_ta as ta
 
 
 def load_data(
-    ticker: str, period: str = "5d", input_dir: str = "data/raw/"
+    ticker: str, period: str = "3mo", input_dir: str = "data/raw/"
 ) -> pd.DataFrame:
     """
     Load stock data from a CSV file.
@@ -37,7 +37,7 @@ def load_data(
         FileNotFoundError: If the CSV file does not exist.
 
     Example:
-        >>> data = load_data("MSFT", "5d")
+        >>> data = load_data("MSFT", "3mo")
         >>> isinstance(data, pd.DataFrame)
         True
         >>> 'Close' in data.columns
@@ -139,7 +139,7 @@ def normalize_data(data: pd.DataFrame) -> pd.DataFrame:
 def save_processed_data(
     data: pd.DataFrame,
     ticker: str,
-    period: str = "5d",
+    period: str = "3mo",
     output_dir: str = "data/processed/",
 ) -> None:
     """
@@ -156,7 +156,7 @@ def save_processed_data(
 
     Example:
         >>> data = pd.DataFrame({"Close": [100, 101, 102]})
-        >>> save_processed_data(data, "MSFT", "5d")
+        >>> save_processed_data(data, "MSFT", "3mo")
     """
     os.makedirs(output_dir, exist_ok=True)
     file_path = os.path.join(output_dir, f"{ticker}_{period}_processed.csv")
