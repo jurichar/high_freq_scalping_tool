@@ -20,7 +20,7 @@ import pandas_ta as ta
 
 
 def load_data(
-    ticker: str, period: str = "3mo", input_dir: str = "data/raw/"
+    ticker: str, period: str = "1y", input_dir: str = "data/raw/"
 ) -> pd.DataFrame:
     """
     Load stock data from a CSV file.
@@ -79,6 +79,9 @@ def add_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
 
     - Simple Moving Average (SMA) over 5 periods.
     - Relative Strength Index (RSI) over 14 periods.
+    - Moving Average Convergence Divergence (MACD).
+    - Bollinger Bands.
+    - Exponential Moving Average (EMA).
 
     Args:
         data (pandas.DataFrame): The cleaned stock data.
@@ -94,8 +97,26 @@ def add_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
         >>> 'RSI' in data_with_indicators.columns
         True
     """
+
     data["SMA_5"] = ta.sma(data["Close"], length=5)
     data["RSI"] = ta.rsi(data["Close"], length=14)
+
+    # MACD returns multiple columns: MACD line, Signal line, Histogram
+    macd = ta.macd(data["Close"])
+    if macd is not None:
+        data["MACD"] = macd["MACD_12_26_9"]
+        data["MACD_Signal"] = macd["MACDs_12_26_9"]
+        data["MACD_Histogram"] = macd["MACDh_12_26_9"]
+
+    # Bollinger Bands also return multiple columns: Lower Band, Middle Band, Upper Band
+    bbands = ta.bbands(data["Close"], length=5)
+    if bbands is not None:
+        data["BollingerB_Lower"] = bbands["BBL_5_2.0"]
+        data["BollingerB_Middle"] = bbands["BBM_5_2.0"]
+        data["BollingerB_Upper"] = bbands["BBU_5_2.0"]
+
+    data["EMA"] = ta.ema(data["Close"])
+
     return data
 
 
@@ -122,14 +143,11 @@ def normalize_data(data: pd.DataFrame) -> pd.DataFrame:
         >>> normalized_data['Volume'].min(), normalized_data['Volume'].max()
         (1000, 1200)
     """
-    # Select numeric columns
     numeric_cols = data.select_dtypes(include=["float64", "int64"]).columns.tolist()
 
-    # Exclude columns that should not be normalized
     cols_to_exclude = ["Volume", "Dividends", "Stock Splits"]
     cols_to_normalize = [col for col in numeric_cols if col not in cols_to_exclude]
 
-    # Apply Min-Max normalization
     data[cols_to_normalize] = (
         data[cols_to_normalize] - data[cols_to_normalize].min()
     ) / (data[cols_to_normalize].max() - data[cols_to_normalize].min())
@@ -139,7 +157,7 @@ def normalize_data(data: pd.DataFrame) -> pd.DataFrame:
 def save_processed_data(
     data: pd.DataFrame,
     ticker: str,
-    period: str = "3mo",
+    period: str = "1y",
     output_dir: str = "data/processed/",
 ) -> None:
     """
@@ -169,9 +187,8 @@ if __name__ == "__main__":
 
     doctest.testmod()
 
-    # Load, clean, add indicators, normalize, and save data for a given stock
     ticker = "MSFT"
-    period = "3mo"
+    period = "1y"
     data = load_data(ticker, period)
     data = add_technical_indicators(data)
     data = clean_data(data)
