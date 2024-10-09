@@ -19,6 +19,8 @@ An algorithmic trading bot for day trading with predictive models and strategies
 - scikit-learn
 - TensorFlow / PyTorch
 - ccxt, alpaca-trade-api
+- matplotlib
+- jupyter
 
 ## 📦 Installation
 
@@ -58,6 +60,7 @@ Access the API at `http://localhost:5000`.
 ## 🔍 Functionalities
 
 - Fetching historical data and technical indicators.
+- Visualizing data with Matplotlib and Jupyter.
 - Predicting price at N+1 (e.g., 5 minutes) with scikit-learn and TensorFlow.
 - Automated trading execution.
 - Back-end api with Flask.
