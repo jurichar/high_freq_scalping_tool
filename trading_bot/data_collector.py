@@ -48,10 +48,56 @@ def get_stock_data(
     return data
 
 
+def get_data_for_period(
+    ticker: str,
+    start_date: str,
+    end_date: str,
+    interval: str = "1d",
+    save_to_csv: bool = False,
+    output_dir: str = "data/raw/",
+):
+    """
+    Retrieve historical data for a given stock ticker within a specified date range.
+
+    Args:
+        ticker (str): The stock ticker symbol (e.g., 'MSFT').
+        start_date (str): The start date for the data (YYYY-MM-DD).
+        end_date (str): The end date for the data (YYYY-MM-DD).
+        interval (str): The interval for the data (e.g., '1d', '1h').
+        save_to_csv (bool): If True, save the data to a CSV file.
+        output_dir (str): Directory where the CSV file should be saved.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing the historical stock data.
+
+    Example:
+        >>> data = get_data_for_period("MSFT", "2021-01-01", "2021-12-31", interval="1d")
+        >>> isinstance(data, pd.DataFrame)
+        True
+        >>> 'Close' in data.columns
+        True
+    """
+    stock = yf.Ticker(ticker)
+    data = stock.history(start=start_date, end=end_date, interval=interval)
+
+    if save_to_csv:
+        os.makedirs(output_dir, exist_ok=True)
+        csv_file = os.path.join(output_dir, f"{ticker}_{start_date}_{end_date}.csv")
+        data.to_csv(csv_file)
+        print(f"Data saved to {csv_file}")
+
+    return data
+
+
 # Example usage
 if __name__ == "__main__":
     import doctest
 
     doctest.testmod()
     data = get_stock_data("MSFT", "3mo", save_to_csv=True)
+    print(data)
+
+    data = get_data_for_period(
+        "MSFT", "2021-01-01", "2021-12-31", interval="1d", save_to_csv=True
+    )
     print(data)
