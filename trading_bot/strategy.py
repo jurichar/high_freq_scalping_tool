@@ -14,14 +14,12 @@ def generate_signals(
     data, short_window=50, long_window=200, rsi_threshold=30, macd_threshold=0
 ):
     """
-    Generates trading signals (buy/sell) based on moving averages, RSI, MACD, and Bollinger Bands.
+    Generate buy/sell signals based on moving averages, RSI, MACD, and Bollinger Bands.
+
+    Uses technical indicators and filters the signals with the EMA and risk management rules.
 
     Args:
-        data (pd.DataFrame): The stock data with technical indicators.
-        short_window (int): The window size for the short-term moving average.
-        long_window (int): The window size for the long-term moving average.
-        rsi_threshold (int): The RSI threshold for buy/sell signals.
-        macd_threshold (float): The MACD threshold for buy/sell signals.
+        data (pd.DataFrame): The stock data.
 
     Returns:
         pd.DataFrame: DataFrame with 'Signal' column indicating buy/sell actions.

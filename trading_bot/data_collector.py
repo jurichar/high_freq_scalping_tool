@@ -11,22 +11,6 @@ import pandas as pd
 import os
 
 
-def is_data_cached(ticker: str, period: str, output_dir: str = "data/raw/") -> bool:
-    """
-    Check if the stock data is already cached in the specified directory.
-
-    Args:
-        ticker (str): The stock ticker symbol (e.g., 'MSFT').
-        period (str): The period for which to retrieve data (e.g., '5d', '1mo').
-        output_dir (str): Directory where the CSV file should be saved.
-
-    Returns:
-        bool: True if the file exists, False otherwise.
-    """
-    csv_file = os.path.join(output_dir, f"{ticker}_{period}.csv")
-    return os.path.exists(csv_file)
-
-
 def get_stock_data(
     ticker: str,
     period: str = "5d",
@@ -54,13 +38,6 @@ def get_stock_data(
         True
     """
     try:
-        if is_data_cached(ticker, period, output_dir):
-            return pd.read_csv(
-                os.path.join(output_dir, f"{ticker}_{period}.csv"),
-                index_col=0,
-                parse_dates=True,
-            )
-
         stock = yf.Ticker(ticker)
         data = stock.history(period=period, interval=interval)
 
@@ -107,14 +84,14 @@ def get_data_for_period(
     try:
         start_date = pd.to_datetime(start_date)
         end_date = pd.to_datetime(end_date)
-        period = f"{start_date.date()}:{end_date.date()}"
-        data = get_stock_data(
-            ticker,
-            period=period,
-            save_to_csv=save_to_csv,
-            output_dir=output_dir,
-            interval=interval,
-        )
+        stock = yf.Ticker(ticker)
+        data = stock.history(start=start_date, end=end_date, interval=interval)
+
+        if save_to_csv:
+            os.makedirs(output_dir, exist_ok=True)
+            csv_file = os.path.join(output_dir, f"{ticker}_{start_date}_{end_date}.csv")
+            data.to_csv(csv_file)
+            print(f"Data saved to {csv_file}")
     except Exception as e:
         print(f"Error in fetching data: {e}")
         data = pd.DataFrame()
