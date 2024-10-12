@@ -79,6 +79,8 @@ def get_data_for_period(
         True
     """
     stock = yf.Ticker(ticker)
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
     data = stock.history(
         start=start_date, end=end_date + pd.Timedelta(days=1), interval=interval
     )

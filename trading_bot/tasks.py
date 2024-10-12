@@ -74,15 +74,6 @@ def process_data(ticker: str, data: pd.DataFrame, period: str = "1y"):
     return data
 
 
-transactions = []
-
-
-def record_transaction(action, price, amount, date):
-    transactions.append(
-        {"action": action, "price": price, "amount": amount, "date": date}
-    )
-
-
 def run_backtest(
     ticker: str,
     start_date: str,
@@ -90,7 +81,7 @@ def run_backtest(
     compare_start: str,
     compare_end: str,
     initial_cash: float = 10000,
-    transaction_cost: float = 0.001,  # 0.1% per transaction
+    transaction_cost: float = 0.001,
     interval: str = "1d",
 ):
     """
@@ -118,37 +109,47 @@ def run_backtest(
     data = collect_and_save_data(ticker, start_date, final_end_date, interval)
     processed_data = process_data(ticker, data)
     signals = generate_signals(processed_data)
-    executor = TradingExecutor(initial_cash=initial_cash)
+    executor = TradingExecutor(
+        initial_cash=initial_cash, transaction_cost=transaction_cost
+    )
+    transactions = []
 
-    # signals.index = signals.index.tz_localize("America/New_York")
+    def record_transaction(action, price, amount, date):
+        transactions.append(
+            {"action": action, "price": price, "amount": amount, "date": date}
+        )
 
     equity_curve = []
     for index, row in signals.iterrows():
         if compare_start <= index <= compare_end:
-            action = (
-                "buy"
-                if row["Signal"] == 1
-                else "sell" if row["Signal"] == -1 else "hold"
-            )
-            executor.execute_orders(pd.DataFrame([row]))
-            equity_curve.append(executor.cash + executor.stock_balance * row["Close"])
-            record_transaction(action, row["Close"], 1, index)
+            signal = row["Filtered_Signal"]
+            action = "buy" if signal == 1 else "sell" if signal == -1 else "hold"
+            if action in ["buy", "sell"]:
+                executor.execute_orders(pd.DataFrame([row]))
+                record_transaction(action, row["Close"], 1, index)
+            total_value = executor.cash + executor.stock_balance * row["Close"]
+            equity_curve.append(total_value)
 
-    # Calculate metrics
     final_value = (
-        executor.cash + executor.stock_balance * processed_data.iloc[-1]["Close"]
+        executor.cash + executor.stock_balance * signals.loc[compare_end]["Close"]
     )
     pct_return = calculate_percentage_return(initial_cash, final_value)
     max_drawdown = calculate_max_drawdown(pd.Series(equity_curve))
     sharpe_ratio = calculate_sharpe_ratio(pd.Series(equity_curve).pct_change())
     sortino_ratio = calculate_sortino_ratio(pd.Series(equity_curve).pct_change())
 
-    # Display results
     print(f"Percentage Return: {pct_return}%")
     print(f"Max Drawdown: {max_drawdown}%")
     print(f"Sharpe Ratio: {sharpe_ratio}")
     print(f"Sortino Ratio: {sortino_ratio}")
     print("Transaction History:", transactions)
+
+    return {
+        "executor": executor,
+        "transactions": transactions,
+        "equity_curve": equity_curve,
+        "signals": signals,
+    }
 
 
 # Example usage

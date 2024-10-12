@@ -17,6 +17,7 @@ Functions:
 import pandas as pd
 import os
 import pandas_ta as ta
+from .data_collector import get_stock_data
 
 
 def load_data(
@@ -45,9 +46,13 @@ def load_data(
     """
     file_path = os.path.join(input_dir, f"{ticker}_{period}.csv")
     if not os.path.exists(file_path):
+        get_stock_data(ticker, period, save_to_csv=True)
         raise FileNotFoundError(f"File {file_path} not found.")
-    data = pd.read_csv(file_path, index_col="Datetime", parse_dates=True)
-    print(data.columns)
+    data = pd.read_csv(
+        file_path,
+        parse_dates=True,
+        index_col=0,
+    )
     return data
 
 
@@ -74,7 +79,7 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-def add_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
+def add_technical_indicators(data, sma_period=5, rsi_period=14, bbands_period=20):
     """
     Add technical indicators to the stock data.
 
@@ -98,9 +103,8 @@ def add_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
         >>> 'RSI' in data_with_indicators.columns
         True
     """
-
-    data["SMA_5"] = ta.sma(data["Close"], length=5)
-    data["RSI"] = ta.rsi(data["Close"], length=14)
+    data[f"SMA_{sma_period}"] = ta.sma(data["Close"], length=sma_period)
+    data["RSI"] = ta.rsi(data["Close"], length=rsi_period)
 
     macd = ta.macd(data["Close"])
     if macd is not None:
@@ -108,13 +112,15 @@ def add_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
         data["MACD_Signal"] = macd["MACDs_12_26_9"]
         data["MACD_Histogram"] = macd["MACDh_12_26_9"]
 
-    bbands = ta.bbands(data["Close"], length=5)
+    bbands = ta.bbands(data["Close"], length=bbands_period)
     if bbands is not None:
-        data["BollingerB_Lower"] = bbands["BBL_5_2.0"]
-        data["BollingerB_Middle"] = bbands["BBM_5_2.0"]
-        data["BollingerB_Upper"] = bbands["BBU_5_2.0"]
-
-    data["EMA"] = ta.ema(data["Close"])
+        lower_band = f"BBL_{bbands_period}_2.0"
+        middle_band = f"BBM_{bbands_period}_2.0"
+        upper_band = f"BBU_{bbands_period}_2.0"
+        data["BollingerB_Lower"] = bbands[lower_band]
+        data["BollingerB_Middle"] = bbands[middle_band]
+        data["BollingerB_Upper"] = bbands[upper_band]
+        data["EMA"] = ta.ema(data["Close"])
 
     return data
 

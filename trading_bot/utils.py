@@ -3,8 +3,10 @@ utils.py
 
 Module containing utility functions for the trading bot.
 
-
 """
+
+import pandas as pd
+import numpy as np
 
 
 def calculate_percentage_return(initial_cash, final_value):
@@ -32,7 +34,7 @@ def calculate_max_drawdown(equity_curve):
     Example:
     >>> equity_curve = pd.Series([100, 110, 90, 120, 80])
     >>> calculate_max_drawdown(equity_curve)
-    -20.0
+    -33.33333333333333
     """
     roll_max = equity_curve.cummax()
     drawdown = (equity_curve - roll_max) / roll_max
@@ -50,7 +52,7 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0):
     Example:
     >>> returns = pd.Series([0.01, 0.02, -0.01, 0.005, 0.015])
     >>> calculate_sharpe_ratio(returns)
-    1.224744871391589
+    0.6949955884209108
     """
     excess_returns = returns - risk_free_rate
     return excess_returns.mean() / excess_returns.std()
@@ -58,6 +60,8 @@ def calculate_sharpe_ratio(returns, risk_free_rate=0):
 
 def calculate_sortino_ratio(returns, risk_free_rate=0):
     """
+    Calculates the Sortino ratio of a return series.
+
     Args:
         returns (pd.Series): The daily or weekly returns of the strategy.
         risk_free_rate (float): The risk-free rate.
@@ -66,8 +70,14 @@ def calculate_sortino_ratio(returns, risk_free_rate=0):
 
     Example:
     >>> returns = pd.Series([0.01, 0.02, -0.01, 0.005, 0.015])
-    >>> calculate_sortino_ratio(returns)
-    1.414213562373095
+    >>> round(calculate_sortino_ratio(returns), 6)
+    0.8
     """
-    downside_returns = returns[returns < 0]
-    return (returns.mean() - risk_free_rate) / downside_returns.std()
+    expected_return = returns.mean() - risk_free_rate
+    downside_returns = returns[returns < risk_free_rate]  # Use risk_free_rate as target
+    if len(downside_returns) == 0:
+        return np.nan
+    downside_deviation = np.sqrt(np.mean((downside_returns - risk_free_rate) ** 2))
+    if downside_deviation == 0 or np.isnan(downside_deviation):
+        return np.nan
+    return expected_return / downside_deviation

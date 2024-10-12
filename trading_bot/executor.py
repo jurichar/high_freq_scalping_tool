@@ -15,9 +15,10 @@ import pandas as pd
 
 
 class TradingExecutor:
-    def __init__(self, initial_cash):
+    def __init__(self, initial_cash, transaction_cost=0.001):
         self.cash = initial_cash
         self.stock_balance = 0
+        self.transaction_cost = transaction_cost
         self.history = []
 
     def buy(self, price, amount):
@@ -32,20 +33,19 @@ class TradingExecutor:
             >>> executor = TradingExecutor(initial_cash=1000)
             >>> executor.buy(price=10, amount=5)
             >>> executor.cash
-            950
+            949.95
             >>> executor.stock_balance
             5
         """
 
-        total_cost = price * amount
+        total_cost = price * amount * (1 + self.transaction_cost)
         if self.cash >= total_cost:
             self.cash -= total_cost
             self.stock_balance += amount
-            self.history.append(f"Bought {amount} shares at ${price:.2f} each")
         else:
-            return
+            print("Not enough cash to buy.")
 
-    def sell(self, price, amount):
+    def sell(self, price, amount=1):
         """
         Sell a specified amount of shares at the given price.
 
@@ -58,17 +58,16 @@ class TradingExecutor:
             >>> executor.stock_balance = 10
             >>> executor.sell(price=20, amount=5)
             >>> executor.cash
-            1100
+            1099.9
             >>> executor.stock_balance
             5
         """
         if self.stock_balance >= amount:
-            total_sale = price * amount
-            self.cash += total_sale
+            total_gain = price * amount * (1 - self.transaction_cost)
+            self.cash += total_gain
             self.stock_balance -= amount
-            self.history.append(f"Sold {amount} shares at ${price:.2f} each")
         else:
-            return
+            print("Not enough stock to sell.")
 
     def execute_orders(self, signals):
         """
@@ -82,7 +81,7 @@ class TradingExecutor:
             >>> executor = TradingExecutor(initial_cash=1000)
             >>> executor.execute_orders(signals)
             >>> executor.cash
-            905
+            904.685
             >>> executor.stock_balance
             1
         """
