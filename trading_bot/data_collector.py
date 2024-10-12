@@ -41,7 +41,7 @@ def get_stock_data(
         stock = yf.Ticker(ticker)
         data = stock.history(period=period, interval=interval)
 
-        if save_to_csv:
+        if save_to_csv and not data.empty:
             os.makedirs(output_dir, exist_ok=True)
             csv_file = os.path.join(output_dir, f"{ticker}_{period}.csv")
             data.to_csv(csv_file)
@@ -87,7 +87,7 @@ def get_data_for_period(
         stock = yf.Ticker(ticker)
         data = stock.history(start=start_date, end=end_date, interval=interval)
 
-        if save_to_csv:
+        if save_to_csv and not data.empty:
             os.makedirs(output_dir, exist_ok=True)
             csv_file = os.path.join(
                 output_dir,
