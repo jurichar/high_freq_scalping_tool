@@ -6,24 +6,18 @@ processing, and backtesting.
 
 Functions:
 - collect_and_save_data: Collects data for a specific period and saves it.
-- process_data: Cleans data and adds technical indicators.
 - run_backtest: Runs a backtest using historical data and displays performance metrics.
 """
 
 import logging
 import pandas as pd
 from trading_bot.data_collector import get_data_for_period
+from trading_bot.data_processor import process_data
 from trading_bot.utils import (
     calculate_max_drawdown,
     calculate_percentage_return,
     calculate_sharpe_ratio,
     calculate_sortino_ratio,
-)
-from .data_processor import (
-    clean_data,
-    add_technical_indicators,
-    normalize_data,
-    save_processed_data,
 )
 from .strategy import generate_signals
 from .executor import TradingExecutor
@@ -50,27 +44,6 @@ def collect_and_save_data(
         ticker, start_date, end_date, interval=interval, save_to_csv=True
     )
     logging.info(f"Data for {ticker} collected and saved.")
-    return data
-
-
-def process_data(ticker: str, data: pd.DataFrame, period: str = "1y"):
-    """
-    Process stock data by cleaning and adding technical indicators, then save it.
-
-    Args:
-        ticker (str): The stock ticker symbol.
-        data (pd.DataFrame): The stock data to process.
-        period (str): The period of the data.
-
-    Returns:
-        pd.DataFrame: The processed stock data with technical indicators.
-    """
-    logging.info(f"Processing data for {ticker}...")
-    data = clean_data(data)
-    data = add_technical_indicators(data)
-    data = normalize_data(data)
-    save_processed_data(data, ticker, period)
-    logging.info(f"Data for {ticker} processed and saved.")
     return data
 
 

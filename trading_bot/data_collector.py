@@ -53,22 +53,25 @@ def get_stock_data(
         >>> 'Close' in data.columns
         True
     """
-    if is_data_cached(ticker, period, output_dir):
-        return pd.read_csv(
-            os.path.join(output_dir, f"{ticker}_{period}.csv"),
-            index_col=0,
-            parse_dates=True,
-        )
+    try:
+        if is_data_cached(ticker, period, output_dir):
+            return pd.read_csv(
+                os.path.join(output_dir, f"{ticker}_{period}.csv"),
+                index_col=0,
+                parse_dates=True,
+            )
 
-    stock = yf.Ticker(ticker)
-    data = stock.history(period=period, interval=interval)
+        stock = yf.Ticker(ticker)
+        data = stock.history(period=period, interval=interval)
 
-    if save_to_csv:
-        os.makedirs(output_dir, exist_ok=True)
-        csv_file = os.path.join(output_dir, f"{ticker}_{period}.csv")
-        data.to_csv(csv_file)
-        print(f"Data saved to {csv_file}")
-
+        if save_to_csv:
+            os.makedirs(output_dir, exist_ok=True)
+            csv_file = os.path.join(output_dir, f"{ticker}_{period}.csv")
+            data.to_csv(csv_file)
+            print(f"Data saved to {csv_file}")
+    except Exception as e:
+        print(f"Error in fetching data: {e}")
+        data = pd.DataFrame()
     return data
 
 
@@ -101,17 +104,20 @@ def get_data_for_period(
         >>> 'Close' in data.columns
         True
     """
-    start_date = pd.to_datetime(start_date)
-    end_date = pd.to_datetime(end_date)
-    period = f"{start_date.date()}:{end_date.date()}"
-    data = get_stock_data(
-        ticker,
-        period=period,
-        save_to_csv=save_to_csv,
-        output_dir=output_dir,
-        interval=interval,
-    )
-
+    try:
+        start_date = pd.to_datetime(start_date)
+        end_date = pd.to_datetime(end_date)
+        period = f"{start_date.date()}:{end_date.date()}"
+        data = get_stock_data(
+            ticker,
+            period=period,
+            save_to_csv=save_to_csv,
+            output_dir=output_dir,
+            interval=interval,
+        )
+    except Exception as e:
+        print(f"Error in fetching data: {e}")
+        data = pd.DataFrame()
     return data
 
 
@@ -121,9 +127,5 @@ if __name__ == "__main__":
 
     doctest.testmod()
     data = get_stock_data("MSFT", "3mo", save_to_csv=True)
-    print(data)
 
-    data = get_data_for_period(
-        "MSFT", "2021-01-01", "2021-12-31", interval="1d", save_to_csv=True
-    )
     print(data)

@@ -12,16 +12,17 @@ Functions:
 - add_technical_indicators: Add technical indicators like SMA and RSI to the data.
 - normalize_data: Normalize the stock data using Min-Max scaling.
 - save_processed_data: Save the processed stock data to a CSV file.
+- process_data: Cleans data and adds technical indicators.
+
 """
 
 import pandas as pd
 import os
 import pandas_ta as ta
-from .data_collector import get_stock_data
 
 
 def load_data(
-    ticker: str, period: str = "1y", input_dir: str = "data/raw/"
+    ticker: str = "MSFT", period: str = "3mo", input_dir: str = "data/raw/"
 ) -> pd.DataFrame:
     """
     Load stock data from a CSV file.
@@ -44,15 +45,19 @@ def load_data(
         >>> 'Close' in data.columns
         True
     """
-    file_path = os.path.join(input_dir, f"{ticker}_{period}.csv")
-    if not os.path.exists(file_path):
-        get_stock_data(ticker, period, save_to_csv=True)
-        raise FileNotFoundError(f"File {file_path} not found.")
-    data = pd.read_csv(
-        file_path,
-        parse_dates=True,
-        index_col=0,
-    )
+    try:
+        file_path = os.path.join(input_dir, f"{ticker}_{period}.csv")
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(
+                f"File {file_path} not found. please run data_collector.py with {ticker} and {period} period."
+            )
+        data = pd.read_csv(
+            file_path,
+            parse_dates=True,
+            index_col=0,
+        )
+    except Exception as e:
+        print(f"Error in loading data: {e}")
     return data
 
 
@@ -74,20 +79,26 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
         >>> clean_data(raw_data)['Close'].isnull().sum()
         0
     """
-    data = data.ffill()
-    data = data.dropna()
+    try:
+        data = data.ffill()
+        data = data.dropna()
+    except Exception as e:
+        print(f"Error in cleaning data: {e}")
     return data
 
 
-def add_technical_indicators(data, sma_period=5, rsi_period=14, bbands_period=20):
+def add_technical_indicators(
+    data, sma_period=5, rsi_period=14, bbands_period=20, atr_period=14
+):
     """
     Add technical indicators to the stock data.
 
-    - Simple Moving Average (SMA) over 5 periods.
-    - Relative Strength Index (RSI) over 14 periods.
+    - Simple Moving Average (SMA).
+    - Relative Strength Index (RSI).
     - Moving Average Convergence Divergence (MACD).
     - Bollinger Bands.
     - Exponential Moving Average (EMA).
+    - Average True Range (ATR) for risk management.
 
     Args:
         data (pandas.DataFrame): The cleaned stock data.
@@ -96,31 +107,36 @@ def add_technical_indicators(data, sma_period=5, rsi_period=14, bbands_period=20
         pandas.DataFrame: A DataFrame with added technical indicators.
 
     Example:
-        >>> data = pd.DataFrame({"Close": [100, 101, 102, 103, 104]})
+        >>> data = pd.DataFrame({"Close": [100, 101, 102, 103, 104],"High": [105, 106, 107, 108, 109],"Low": [95, 96, 97, 98, 99]})
         >>> data_with_indicators = add_technical_indicators(data)
         >>> 'SMA_5' in data_with_indicators.columns
         True
         >>> 'RSI' in data_with_indicators.columns
         True
     """
-    data[f"SMA_{sma_period}"] = ta.sma(data["Close"], length=sma_period)
-    data["RSI"] = ta.rsi(data["Close"], length=rsi_period)
+    try:
+        bbands = ta.bbands(data["Close"], length=bbands_period)
 
-    macd = ta.macd(data["Close"])
-    if macd is not None:
-        data["MACD"] = macd["MACD_12_26_9"]
-        data["MACD_Signal"] = macd["MACDs_12_26_9"]
-        data["MACD_Histogram"] = macd["MACDh_12_26_9"]
+        data[f"SMA_{sma_period}"] = ta.sma(data["Close"], length=sma_period)
+        data["RSI"] = ta.rsi(data["Close"], length=rsi_period)
 
-    bbands = ta.bbands(data["Close"], length=bbands_period)
-    if bbands is not None:
-        lower_band = f"BBL_{bbands_period}_2.0"
-        middle_band = f"BBM_{bbands_period}_2.0"
-        upper_band = f"BBU_{bbands_period}_2.0"
-        data["BollingerB_Lower"] = bbands[lower_band]
-        data["BollingerB_Middle"] = bbands[middle_band]
-        data["BollingerB_Upper"] = bbands[upper_band]
+        macd = ta.macd(data["Close"])
+        if macd is not None:
+            data["MACD"] = macd["MACD_12_26_9"]
+            data["MACD_Signal"] = macd["MACDs_12_26_9"]
+            data["MACD_Histogram"] = macd["MACDh_12_26_9"]
+
+        bbands = ta.bbands(data["Close"], length=bbands_period)
+        if bbands is not None:
+            data["BollingerB_Lower"] = bbands[f"BBL_{bbands_period}_2.0"]
+            data["BollingerB_Upper"] = bbands[f"BBU_{bbands_period}_2.0"]
+
         data["EMA"] = ta.ema(data["Close"])
+        data["ATR"] = ta.atr(
+            data["High"], data["Low"], data["Close"], length=atr_period
+        )
+    except Exception as e:
+        print(f"Error in adding technical indicators: {e}")
 
     return data
 
@@ -148,21 +164,24 @@ def normalize_data(data: pd.DataFrame) -> pd.DataFrame:
         >>> normalized_data['Volume'].min(), normalized_data['Volume'].max()
         (1000, 1200)
     """
-    numeric_cols = data.select_dtypes(include=["float64", "int64"]).columns.tolist()
+    try:
+        numeric_cols = data.select_dtypes(include=["float64", "int64"]).columns.tolist()
 
-    cols_to_exclude = ["Volume", "Dividends", "Stock Splits"]
-    cols_to_normalize = [col for col in numeric_cols if col not in cols_to_exclude]
+        cols_to_exclude = ["Volume", "Dividends", "Stock Splits"]
+        cols_to_normalize = [col for col in numeric_cols if col not in cols_to_exclude]
 
-    data[cols_to_normalize] = (
-        data[cols_to_normalize] - data[cols_to_normalize].min()
-    ) / (data[cols_to_normalize].max() - data[cols_to_normalize].min())
+        data[cols_to_normalize] = (
+            data[cols_to_normalize] - data[cols_to_normalize].min()
+        ) / (data[cols_to_normalize].max() - data[cols_to_normalize].min())
+    except Exception as e:
+        print(f"Error in normalizing data: {e}")
     return data
 
 
 def save_processed_data(
     data: pd.DataFrame,
-    ticker: str,
-    period: str = "1y",
+    ticker: str = "MSFT",
+    period: str = "3mo",
     output_dir: str = "data/processed/",
 ) -> None:
     """
@@ -181,22 +200,40 @@ def save_processed_data(
         >>> data = pd.DataFrame({"Close": [100, 101, 102]})
         >>> save_processed_data(data, "MSFT", "3mo")
     """
-    os.makedirs(output_dir, exist_ok=True)
+    try:
+        os.makedirs(output_dir, exist_ok=True)
 
-    file_path = os.path.join(output_dir, f"{ticker}_{period}_processed.csv")
-    data.to_csv(file_path)
+        file_path = os.path.join(output_dir, f"{ticker}_{period}_processed.csv")
+        data.to_csv(file_path)
+    except Exception as e:
+        print(f"Error in saving processed data: {e}")
+
+
+def process_data(data: pd.DataFrame, ticker: str = "MSFT", period: str = "3mo"):
+    """
+    Process stock data by cleaning and adding technical indicators, then save it.
+
+    Args:
+        data (pd.DataFrame): The stock data to process.
+        ticker (str): The stock ticker symbol.
+        period (str): The period of the data.
+
+    Returns:
+        pd.DataFrame: The processed stock data with technical indicators.
+    """
+    try:
+        data = clean_data(data)
+        data = add_technical_indicators(data)
+        data = normalize_data(data)
+        save_processed_data(data, ticker, period)
+    except Exception as e:
+        print(f"Error in processing data: {e}")
+    return data
 
 
 # Example usage
 if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
-
     ticker = "MSFT"
-    period = "1y"
+    period = "3mo"
     data = load_data(ticker, period)
-    data = normalize_data(data)
-    data = add_technical_indicators(data)
-    data = clean_data(data)
-    save_processed_data(data, ticker, period)
+    process_data(data, ticker, period)
