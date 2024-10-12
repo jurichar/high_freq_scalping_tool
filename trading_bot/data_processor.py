@@ -46,7 +46,8 @@ def load_data(
     file_path = os.path.join(input_dir, f"{ticker}_{period}.csv")
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"File {file_path} not found.")
-    data = pd.read_csv(file_path, index_col="Date", parse_dates=True)
+    data = pd.read_csv(file_path, index_col="Datetime", parse_dates=True)
+    print(data.columns)
     return data
 
 
@@ -101,14 +102,12 @@ def add_technical_indicators(data: pd.DataFrame) -> pd.DataFrame:
     data["SMA_5"] = ta.sma(data["Close"], length=5)
     data["RSI"] = ta.rsi(data["Close"], length=14)
 
-    # MACD returns multiple columns: MACD line, Signal line, Histogram
     macd = ta.macd(data["Close"])
     if macd is not None:
         data["MACD"] = macd["MACD_12_26_9"]
         data["MACD_Signal"] = macd["MACDs_12_26_9"]
         data["MACD_Histogram"] = macd["MACDh_12_26_9"]
 
-    # Bollinger Bands also return multiple columns: Lower Band, Middle Band, Upper Band
     bbands = ta.bbands(data["Close"], length=5)
     if bbands is not None:
         data["BollingerB_Lower"] = bbands["BBL_5_2.0"]
@@ -177,6 +176,7 @@ def save_processed_data(
         >>> save_processed_data(data, "MSFT", "3mo")
     """
     os.makedirs(output_dir, exist_ok=True)
+
     file_path = os.path.join(output_dir, f"{ticker}_{period}_processed.csv")
     data.to_csv(file_path)
 
@@ -190,7 +190,7 @@ if __name__ == "__main__":
     ticker = "MSFT"
     period = "1y"
     data = load_data(ticker, period)
+    data = normalize_data(data)
     data = add_technical_indicators(data)
     data = clean_data(data)
-    data = normalize_data(data)
     save_processed_data(data, ticker, period)

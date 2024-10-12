@@ -16,6 +16,7 @@ def get_stock_data(
     period: str = "5d",
     save_to_csv: bool = False,
     output_dir: str = "data/raw/",
+    interval: str = "1d",
 ):
     """
     Retrieve historical data for a given stock ticker and optionally save it to a CSV file.
@@ -37,7 +38,7 @@ def get_stock_data(
         True
     """
     stock = yf.Ticker(ticker)
-    data = stock.history(period=period)
+    data = stock.history(period=period, interval=interval)
 
     if save_to_csv:
         os.makedirs(output_dir, exist_ok=True)
@@ -78,7 +79,9 @@ def get_data_for_period(
         True
     """
     stock = yf.Ticker(ticker)
-    data = stock.history(start=start_date, end=end_date, interval=interval)
+    data = stock.history(
+        start=start_date, end=end_date + pd.Timedelta(days=1), interval=interval
+    )
 
     if save_to_csv:
         os.makedirs(output_dir, exist_ok=True)
