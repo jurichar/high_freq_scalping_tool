@@ -209,7 +209,15 @@ def save_processed_data(
         print(f"Error in saving processed data: {e}")
 
 
-def process_data(data: pd.DataFrame, ticker: str = "MSFT", period: str = "3mo"):
+def process_data(
+    data: pd.DataFrame,
+    ticker: str = "MSFT",
+    period: str = "3mo",
+    sma_period=5,
+    rsi_period=14,
+    bbands_period=20,
+    atr_period=14,
+) -> pd.DataFrame:
     """
     Process stock data by cleaning and adding technical indicators, then save it.
 
@@ -223,8 +231,10 @@ def process_data(data: pd.DataFrame, ticker: str = "MSFT", period: str = "3mo"):
     """
     try:
         data = clean_data(data)
-        data = add_technical_indicators(data)
-        data = normalize_data(data)
+        data = add_technical_indicators(
+            data, sma_period, rsi_period, bbands_period, atr_period
+        )
+        # data = normalize_data(data)
         save_processed_data(data, ticker, period)
     except Exception as e:
         print(f"Error in processing data: {e}")

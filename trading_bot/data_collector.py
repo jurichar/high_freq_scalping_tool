@@ -89,7 +89,10 @@ def get_data_for_period(
 
         if save_to_csv:
             os.makedirs(output_dir, exist_ok=True)
-            csv_file = os.path.join(output_dir, f"{ticker}_{start_date}_{end_date}.csv")
+            csv_file = os.path.join(
+                output_dir,
+                f"{ticker}_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}.csv",
+            )
             data.to_csv(csv_file)
             print(f"Data saved to {csv_file}")
     except Exception as e:
