@@ -11,8 +11,8 @@ import time
 import logging
 import yfinance as yf
 from datetime import datetime, timedelta
-from trading_bot.strategy import generate_signals
-from trading_bot.executor import TradingExecutor
+from sofware.strategy import generate_signals
+from sofware.executor import TradingExecutor
 
 SYMBOL = "MSFT"
 SHORT_WINDOW = 50

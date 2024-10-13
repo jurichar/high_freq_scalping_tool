@@ -13,7 +13,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 from sofware.data_processor import process_data
-from sofware.utils import (
+from sofware.analysis import (
     calculate_max_drawdown,
     calculate_percentage_return,
     calculate_sharpe_ratio,

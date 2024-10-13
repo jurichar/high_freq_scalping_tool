@@ -61,6 +61,7 @@ Access the API at `http://localhost:5000`.
 
 - Fetching historical data and technical indicators.
 - Visualizing data with Matplotlib and Jupyter.
+- Open short and long positions with TP and SL.
 - Predicting price at N+1 (e.g., 5 minutes) with scikit-learn and TensorFlow.
 - Automated trading execution.
 - Back-end api with Flask.
