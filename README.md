@@ -60,6 +60,7 @@ Access the API at `http://localhost:5000`.
 ## 🔍 Functionalities
 
 - Fetching historical data and technical indicators.
+- Tests and coverage with pytest.
 - Visualizing data with Matplotlib and Jupyter.
 - Open short and long positions with TP and SL.
 - Predicting price at N+1 (e.g., 5 minutes) with scikit-learn and TensorFlow.

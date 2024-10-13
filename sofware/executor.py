@@ -101,7 +101,7 @@ class Position:
         >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
         >>> pos.update_stop_loss_take_profit(0.05, 0.1)
         >>> pos.check_exit_conditions(110)
-        False
+        True
         >>> pos.check_exit_conditions(120)
         True
         >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
@@ -113,15 +113,24 @@ class Position:
         """
         if self.closed:
             return False
+
+        epsilon = 1e-6
+
         if self.type == "long":
-            if self.stop_loss is not None and current_price <= self.stop_loss:
+            if self.stop_loss is not None and current_price <= self.stop_loss + epsilon:
                 return True
-            if self.take_profit is not None and current_price >= self.take_profit:
+            if (
+                self.take_profit is not None
+                and current_price >= self.take_profit - epsilon
+            ):
                 return True
         elif self.type == "short":
-            if self.stop_loss is not None and current_price >= self.stop_loss:
+            if self.stop_loss is not None and current_price >= self.stop_loss - epsilon:
                 return True
-            if self.take_profit is not None and current_price <= self.take_profit:
+            if (
+                self.take_profit is not None
+                and current_price <= self.take_profit + epsilon
+            ):
                 return True
         return False
 
@@ -209,14 +218,27 @@ class TradingExecutor:
         >>> executor.open_position('short', 10, 100, pd.Timestamp('2023-01-01'))
         >>> len(executor.positions) == 2
         True
+
+        >>> executor = TradingExecutor(initial_cash=100)
+        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
+        >>> len(executor.positions) == 0
+        True
         """
+
         try:
             total_cost = price * amount * (1 + self.transaction_cost)
             margin_required = total_cost / self.leverage
-            if self.cash < margin_required:
-                logging.warning("Insufficient funds to open position.")
-                return
-            self.cash -= margin_required
+            if position_type == "long":
+                if self.cash < margin_required:
+                    logging.warning("Insufficient funds to open position.")
+                    return
+                self.cash -= margin_required
+            elif position_type == "short":
+                if self.cash < margin_required:
+                    logging.warning("Insufficient funds to open position.")
+                    return
+                self.cash -= margin_required
+
             position = Position(
                 position_type=position_type,
                 amount=amount * self.leverage,
@@ -374,6 +396,17 @@ class TradingExecutor:
         >>> executor = TradingExecutor(initial_cash=10000)
         >>> executor.get_total_portfolio_value(110)
         10000.0
+
+        >>> executor = TradingExecutor(initial_cash=10000)
+        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
+        >>> executor.get_total_portfolio_value(110)
+        9099.0
+
+        >>> executor = TradingExecutor(initial_cash=10000)
+        >>> executor.open_position('short', 10, 100, pd.Timestamp('2023-01-01'))
+        >>> executor.get_total_portfolio_value(90)
+        9099.0
+
         """
         try:
             position_value = 0.0
