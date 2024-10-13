@@ -309,30 +309,56 @@ class TradingExecutor:
         Executes a trading signal.
 
         Args:
-            signal (int): Trading signal (-1 to sell/short, 1 to buy/long, 0 to hold).
-            price (float): Current price of the asset.
-            date (pd.Timestamp): Current date.
+        signal (int): Trading signal.
+        1  - Enter Long
+        2  - Exit Long
+        -1 - Enter Short
+        -2 - Exit Short
+        0  - Hold
+        price (float): Current price of the asset.
+        date (pd.Timestamp): Current date.
 
         Example:
         >>> executor = TradingExecutor(initial_cash=10000)
         >>> executor.execute_signal(1, 100, pd.Timestamp('2023-01-01'))
         >>> len(executor.positions) == 1
         True
+        >>> executor.execute_signal(2, 110, pd.Timestamp('2023-02-01'))
+        >>> len(executor.positions) == 0
+        True
+
+        >>> executor.execute_signal(-1, 100, pd.Timestamp('2023-01-01'))
+        >>> len(executor.positions) == 1
+        True
+        >>> executor.execute_signal(-2, 90, pd.Timestamp('2023-02-01'))
+        >>> len(executor.positions) == 0
+        True
         """
+        self.check_positions(price, date)
+
         if signal == 1:
             short_positions = [p for p in self.positions if p.type == "short"]
             for position in short_positions:
                 self.close_position(position, price, date)
             if not any(p.type == "long" for p in self.positions):
                 self.open_position("long", 1, price, date)
+
+        elif signal == 2:
+            long_positions = [p for p in self.positions if p.type == "long"]
+            for position in long_positions:
+                self.close_position(position, price, date)
+
         elif signal == -1:
             long_positions = [p for p in self.positions if p.type == "long"]
             for position in long_positions:
                 self.close_position(position, price, date)
             if not any(p.type == "short" for p in self.positions):
                 self.open_position("short", 1, price, date)
-        else:
-            self.check_positions(price, date)
+
+        elif signal == -2:
+            short_positions = [p for p in self.positions if p.type == "short"]
+            for position in short_positions:
+                self.close_position(position, price, date)
 
     def get_total_portfolio_value(self, current_price):
         """
@@ -369,6 +395,18 @@ class TradingExecutor:
 
         Args:
             current_price (float): Current price of the asset.
+
+        Example:
+        >>> executor = TradingExecutor(initial_cash=10000)
+        >>> executor.display_portfolio(110)
+        <BLANKLINE>
+        ==============================
+        Current Portfolio Status:
+        Cash: $10000.00
+        Open Positions: 0
+        Total Portfolio Value: $10000.00
+        ==============================
+        <BLANKLINE>
         """
         try:
             total_value = self.get_total_portfolio_value(current_price)
