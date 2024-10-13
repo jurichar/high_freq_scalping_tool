@@ -17,6 +17,7 @@ from datetime import datetime
 
 
 class Position:
+
     def __init__(
         self,
         position_type,
@@ -168,6 +169,7 @@ class Position:
 
 
 class TradingExecutor:
+
     def __init__(
         self,
         initial_cash,
@@ -176,6 +178,7 @@ class TradingExecutor:
         stop_loss_pct=None,
         take_profit_pct=None,
         trailing_pct=None,
+        slippage_pct=0.0005,
     ):
         """
         Initializes the TradingExecutor to manage trades and the portfolio.
@@ -195,6 +198,7 @@ class TradingExecutor:
         self.trailing_pct = trailing_pct
         self.positions = []
         self.history = []
+        self.slippage_pct = slippage_pct
 
     def open_position(
         self, position_type: str, amount: int, price: float, date: pd.Timestamp
@@ -226,7 +230,16 @@ class TradingExecutor:
         """
 
         try:
-            total_cost = price * amount * (1 + self.transaction_cost)
+
+            if position_type == "long":
+                adjusted_price = price * (1 + self.slippage_pct)
+            elif position_type == "short":
+                adjusted_price = price * (1 - self.slippage_pct)
+            else:
+                logging.error(f"Unknown position type: {position_type}")
+                return
+
+            total_cost = adjusted_price * amount * (1 + self.transaction_cost)
             margin_required = total_cost / self.leverage
             if position_type == "long":
                 if self.cash < margin_required:
@@ -285,14 +298,23 @@ class TradingExecutor:
         """
         try:
             amount = position.amount
-            proceeds = price * amount * (1 - self.transaction_cost)
-            position.close(price, date)
+
+            if position.type == "long":
+                adjusted_price = price * (1 - self.slippage_pct)
+            elif position.type == "short":
+                adjusted_price = price * (1 + self.slippage_pct)
+            else:
+                logging.error(f"Unknown position type: {position.type}")
+                return
+
+            proceeds = adjusted_price * amount * (1 - self.transaction_cost)
+            position.close(adjusted_price, date)
             self.cash += proceeds
             self.history.append(
                 {
                     "action": "close",
                     "position_type": position.type,
-                    "price": price,
+                    "price": adjusted_price,
                     "amount": amount,
                     "date": date,
                     "profit_loss": position.profit_loss,

@@ -1,64 +1,71 @@
 """
 strategy.py
 
-Module for implementing trading strategies.
+Module for implementing scalping trading strategies.
 
 Functions:
-- generate_signals: Generates buy/sell signals based on an optimized strategy.
+- generate_signals: Generates buy/sell signals based on a scalping strategy.
 """
 
 import numpy as np
+import pandas as pd
 
 
 def generate_signals(data):
     """
-    Generate buy/sell signals based on a combination of technical indicators.
+    Generate buy/sell signals based on a scalping strategy.
 
-    The strategy uses moving averages crossovers, RSI levels, MACD signals,
-    and Bollinger Bands to generate signals.
+    The strategy uses short-term EMA crossovers, RSI levels,
+    Bollinger Bands, and ATR for volatility-adjusted stop-losses.
 
     Args:
         data (pd.DataFrame): The stock data with technical indicators.
 
     Returns:
-        pd.DataFrame: DataFrame with 'Signal' and 'Filtered_Signal' columns.
+        pd.DataFrame: DataFrame with 'Signal' and 'Close' columns.
     """
-    data["Signal"] = 0
 
-    # Moving Averages Crossover
-    data["Short_MA"] = data["Close"].rolling(window=50, min_periods=1).mean()
-    data["Long_MA"] = data["Close"].rolling(window=200, min_periods=1).mean()
-    data["MA_Crossover"] = np.where(data["Short_MA"] > data["Long_MA"], 1, -1)
+    # Ensure data is sorted by date
+    data = data.sort_index()
 
-    # RSI Signals
+    # Short-term EMAs
+    data["EMA_5"] = data["Close"].ewm(span=5, adjust=False).mean()
+    data["EMA_10"] = data["Close"].ewm(span=10, adjust=False).mean()
+
+    # EMA Crossover Signal
+    data["EMA_Signal"] = 0
+    data["EMA_Signal"] = np.where(data["EMA_5"] > data["EMA_10"], 1, -1)
+
+    # Short-term RSI
+    data["RSI_Short"] = data["RSI"].rolling(window=7).mean()
+
+    # RSI Signal
+    data["RSI_Signal"] = 0
     data["RSI_Signal"] = np.where(
-        data["RSI"] < 30, 1, np.where(data["RSI"] > 70, -1, 0)
+        data["RSI_Short"] < 30, 1, np.where(data["RSI_Short"] > 70, -1, 0)
     )
 
-    # MACD Signals
-    data["MACD_Signal"] = np.where(
-        (data["MACD"] > data["MACD_Signal"]),
-        1,
-        np.where((data["MACD"] < data["MACD_Signal"]), -1, 0),
-    )
-
-    # Bollinger Bands Signals
-    data["Bollinger_Signal"] = np.where(
+    # Bollinger Bands Signal
+    data["BB_Signal"] = 0
+    data["BB_Signal"] = np.where(
         data["Close"] < data["BollingerB_Lower"],
         1,
         np.where(data["Close"] > data["BollingerB_Upper"], -1, 0),
     )
 
     # Aggregate Signals
-    data["Signal"] = (
-        data["MA_Crossover"]
-        + data["RSI_Signal"]
-        + data["MACD_Signal"]
-        + data["Bollinger_Signal"]
-    )
+    data["Signal"] = data["EMA_Signal"] + data["RSI_Signal"] + data["BB_Signal"]
 
-    data["Filtered_Signal"] = np.where(
+    # Final Signal
+    data["Signal"] = np.where(
         data["Signal"] > 0, 1, np.where(data["Signal"] < 0, -1, 0)
     )
 
-    return data[["Signal", "Filtered_Signal", "Close"]]
+    # Filter duplicate signals
+    data["Signal"] = data["Signal"].diff().fillna(data["Signal"])
+
+    # Adjust stop-loss and take-profit using ATR
+    data["ATR_Stop_Loss"] = data["ATR"] * 1.5  # Multiplier can be adjusted
+    data["ATR_Take_Profit"] = data["ATR"] * 2  # Multiplier can be adjusted
+
+    return data[["Signal", "Close", "ATR_Stop_Loss", "ATR_Take_Profit"]]

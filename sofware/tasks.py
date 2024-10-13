@@ -51,50 +51,45 @@ def run_back_test(
     ticker,
     start_date,
     end_date,
-    compare_start,
-    compare_end,
     initial_cash=10000,
     transaction_cost=0.001,
     leverage=1,
-    stop_loss_pct=0.05,
-    take_profit_pct=0.1,
-    interval="1d",
+    stop_loss_pct=0.005,
+    take_profit_pct=0.005,
+    slippage_pct=0.0005,
+    interval="1m",
 ):
     """
-    Run a back test using historical data and display performance metrics.
+    Run a back test using high-frequency data and display performance metrics.
 
     Args:
         ticker (str): The stock ticker symbol.
         start_date (str): Start date for data collection.
         end_date (str): End date for data collection.
-        compare_start (str): Start date for back test.
-        compare_end (str): End date for back test.
         initial_cash (float): Initial cash for the simulation.
         transaction_cost (float): Transaction cost.
         leverage (float): Leverage factor.
         stop_loss_pct (float): Stop-loss percentage.
         take_profit_pct (float): Take-profit percentage.
-        interval (str): Data interval.
+        slippage_pct (float): Slippage percentage.
+        interval (str): Data interval (e.g., '1m' for 1-minute data).
 
     Returns:
-        dict: Back tests results.
+        dict: Back test results.
     """
-    compare_start = pd.Timestamp(compare_start).tz_localize("America/New_York")
-    compare_end = pd.Timestamp(compare_end).tz_localize("America/New_York")
-
-    print(f"Running back tests for {ticker} from {start_date} to {compare_end}...")
+    print(f"Running back tests for {ticker} from {start_date} to {end_date}...")
 
     data = get_data_for_period(
-        ticker, start_date, end_date, interval=interval, save_to_csv=True
+        ticker, start_date, end_date, interval=interval, save_to_csv=False
     )
     period = f"{start_date}_{end_date}"
-    print(f"Processing data for {ticker} ({period})...")
+    logging.info(f"Processing data for {ticker} ({period})...")
     processed_data = process_data(
         data,
         ticker,
         period,
         sma_period=5,
-        rsi_period=14,
+        rsi_period=7,
         bbands_period=20,
         atr_period=14,
     )
@@ -106,44 +101,40 @@ def run_back_test(
         leverage=leverage,
         stop_loss_pct=stop_loss_pct,
         take_profit_pct=take_profit_pct,
+        slippage_pct=slippage_pct,
     )
     transactions = []
 
     equity_curve = []
     dates = []
 
-    # Ensure signals are sorted by date
     signals = signals.sort_index()
 
     for index, row in signals.iterrows():
-        if compare_start <= index <= compare_end:
-            signal = row["Filtered_Signal"]
-            price = row["Close"]
-            date = index
+        signal = row["Signal"]
+        price = row["Close"]
+        date = index
 
-            # Execute the signal
-            executor.execute_signal(signal, price, date)
+        # Adjust stop-loss and take-profit dynamically based on ATR
+        executor.stop_loss_pct = row["ATR_Stop_Loss"] / price
+        executor.take_profit_pct = row["ATR_Take_Profit"] / price
 
-            # Record transactions if new ones have occurred
-            if executor.history and (
-                not transactions or executor.history[-1] != transactions[-1]
-            ):
-                last_transaction = executor.history[-1]
-                transactions.append(last_transaction)
+        # Execute the signal
+        executor.execute_signal(signal, price, date)
 
-            # Update equity curve
-            total_value = executor.get_total_portfolio_value(price)
-            equity_curve.append(total_value)
-            dates.append(date)
+        # Record transactions if new ones have occurred
+        if executor.history and (
+            not transactions or executor.history[-1] != transactions[-1]
+        ):
+            last_transaction = executor.history[-1]
+            transactions.append(last_transaction)
 
-    if compare_end not in signals.index:
-        logging.warning(
-            f"Timestamp {compare_end} not found, using the last available timestamp."
-        )
-        compare_end = signals.index[-1]
+        # Update equity curve
+        total_value = executor.get_total_portfolio_value(price)
+        equity_curve.append(total_value)
+        dates.append(date)
 
-    final_price = signals.loc[compare_end]["Close"]
-    final_value = executor.get_total_portfolio_value(final_price)
+    final_value = executor.get_total_portfolio_value(price)
     pct_return = calculate_percentage_return(initial_cash, final_value)
     max_drawdown = calculate_max_drawdown(pd.Series(equity_curve))
     sharpe_ratio = calculate_sharpe_ratio(pd.Series(equity_curve).pct_change())
