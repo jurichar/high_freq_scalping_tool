@@ -1,8 +1,7 @@
 """
-utils.py
+analysis.py
 
-Module containing utility functions for the trading bot.
-
+Module for calculating performance metrics of a trading strategy.
 """
 
 import pandas as pd
@@ -74,7 +73,7 @@ def calculate_sortino_ratio(returns, risk_free_rate=0):
     0.8
     """
     expected_return = returns.mean() - risk_free_rate
-    downside_returns = returns[returns < risk_free_rate]  # Use risk_free_rate as target
+    downside_returns = returns[returns < risk_free_rate]
     if len(downside_returns) == 0:
         return np.nan
     downside_deviation = np.sqrt(np.mean((downside_returns - risk_free_rate) ** 2))
