@@ -49,45 +49,6 @@ class Position:
         self.exit_date = None
         self.profit_loss = 0.0
 
-    def update_stop_loss_take_profit(
-        self, stop_loss_pct: float, take_profit_pct: float
-    ) -> None:
-        """
-        Updates the stop-loss and take-profit levels based on the entry price.
-
-        Args:
-            stop_loss_pct (float): Stop-loss percentage.
-            take_profit_pct (float): Take-profit percentage.
-
-        Example:
-        >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> pos.update_stop_loss_take_profit(0.05, 0.1)
-        >>> pos.stop_loss
-        95.0
-        >>> pos.take_profit
-        110.00000000000001
-        >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
-        >>> pos.update_stop_loss_take_profit(0.05, 0.1)
-        >>> pos.stop_loss
-        157.5
-        >>> pos.take_profit
-        135.0
-        """
-        if self.type == "long":
-            self.stop_loss = (
-                self.entry_price * (1 - stop_loss_pct) if stop_loss_pct else None
-            )
-            self.take_profit = (
-                self.entry_price * (1 + take_profit_pct) if take_profit_pct else None
-            )
-        elif self.type == "short":
-            self.stop_loss = (
-                self.entry_price * (1 + stop_loss_pct) if stop_loss_pct else None
-            )
-            self.take_profit = (
-                self.entry_price * (1 - take_profit_pct) if take_profit_pct else None
-            )
-
     def check_exit_conditions(self, high_price: float, low_price: float) -> bool:
         """
         Checks if the stop-loss or take-profit conditions are met.
@@ -174,8 +135,6 @@ class TradingExecutor:
         initial_cash,
         transaction_cost=0.001,
         leverage=1,
-        stop_loss_pct=None,
-        take_profit_pct=None,
         trailing_pct=None,
         slippage_pct=0.0005,
     ):
@@ -192,33 +151,19 @@ class TradingExecutor:
         self.cash = initial_cash
         self.transaction_cost = transaction_cost
         self.leverage = leverage
-        self.stop_loss_pct = stop_loss_pct
-        self.take_profit_pct = take_profit_pct
         self.trailing_pct = trailing_pct
         self.positions = []
         self.history = []
         self.slippage_pct = slippage_pct
 
-    def update_positions_stop_loss_take_profit(self):
-        """
-        Updates the stop-loss and take-profit levels for all open positions.
-
-        Example:
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> executor.update_positions_stop_loss_take_profit(0.05, 0.1)
-        >>> executor.positions[0].stop_loss
-        95.0
-        >>> executor.positions[0].take_profit
-        110.00000000000001
-        """
-        for position in self.positions:
-            position.update_stop_loss_take_profit(
-                self.stop_loss_pct, self.take_profit_pct
-            )
-
     def open_position(
-        self, position_type: str, amount: int, price: float, date: pd.Timestamp
+        self,
+        position_type: str,
+        amount: int,
+        price: float,
+        date: pd.Timestamp,
+        stop_loss_pct: float,
+        take_profit_pct: float,
     ) -> None:
         """
         Opens a long or short position.
@@ -247,10 +192,16 @@ class TradingExecutor:
         """
 
         try:
-
+            if stop_loss_pct <= 0 or take_profit_pct <= 0:
+                logging.error("Stop-loss and take-profit percentages must be positive.")
+                return
             if position_type == "long":
+                stop_loss = price * (1 - stop_loss_pct)
+                take_profit = price * (1 + take_profit_pct)
                 adjusted_price = price * (1 + self.slippage_pct)
             elif position_type == "short":
+                stop_loss = price * (1 + stop_loss_pct)
+                take_profit = price * (1 - take_profit_pct)
                 adjusted_price = price * (1 - self.slippage_pct)
             else:
                 logging.error(f"Unknown position type: {position_type}")
@@ -262,23 +213,23 @@ class TradingExecutor:
                 if self.cash < margin_required:
                     logging.warning("Insufficient funds to open position.")
                     return
-                self.cash -= margin_required
             elif position_type == "short":
                 if self.cash < margin_required:
                     logging.warning("Insufficient funds to open position.")
                     return
-                self.cash -= margin_required
+
+            self.cash -= margin_required
 
             position = Position(
                 position_type=position_type,
                 amount=amount * self.leverage,
                 entry_price=price,
                 entry_date=date,
-            )
-            position.update_stop_loss_take_profit(
-                self.stop_loss_pct, self.take_profit_pct
+                stop_loss=stop_loss,
+                take_profit=take_profit,
             )
             self.positions.append(position)
+
             self.history.append(
                 {
                     "action": "open",
@@ -365,7 +316,9 @@ class TradingExecutor:
                 )
                 self.close_position(position, price, date)
 
-    def execute_signal(self, signal, price, date, high_price, low_price):
+    def execute_signal(
+        self, signal, price, date, high_price, low_price, atr_stop_loss, atr_take_profit
+    ):
         """
         Executes a trading signal.
 
@@ -395,7 +348,6 @@ class TradingExecutor:
         >>> len(executor.positions) == 0
         True
         """
-        self.update_positions_stop_loss_take_profit()
         self.check_positions(price, date, high_price, low_price)
 
         if signal == 1:
@@ -403,7 +355,11 @@ class TradingExecutor:
             for position in short_positions:
                 self.close_position(position, price, date)
             if not any(p.type == "long" for p in self.positions):
-                self.open_position("long", 1, price, date)
+                stop_loss_pct = atr_stop_loss / price
+                take_profit_pct = atr_take_profit / price
+                self.open_position(
+                    "long", 1, price, date, stop_loss_pct, take_profit_pct
+                )
 
         elif signal == 2:
             long_positions = [p for p in self.positions if p.type == "long"]
@@ -415,7 +371,11 @@ class TradingExecutor:
             for position in long_positions:
                 self.close_position(position, price, date)
             if not any(p.type == "short" for p in self.positions):
-                self.open_position("short", 1, price, date)
+                stop_loss_pct = atr_stop_loss / price
+                take_profit_pct = atr_take_profit / price
+                self.open_position(
+                    "short", 1, price, date, stop_loss_pct, take_profit_pct
+                )
 
         elif signal == -2:
             short_positions = [p for p in self.positions if p.type == "short"]

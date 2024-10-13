@@ -54,10 +54,12 @@ def run_back_test(
     initial_cash=10000,
     transaction_cost=0.001,
     leverage=1,
-    stop_loss_pct=0.005,
-    take_profit_pct=0.005,
     slippage_pct=0.0005,
     interval="1m",
+    sma_period=5,
+    rsi_period=7,
+    bbands_period=20,
+    atr_period=14,
 ):
     """
     Run a back test using high-frequency data and display performance metrics.
@@ -73,6 +75,10 @@ def run_back_test(
         take_profit_pct (float): Take-profit percentage.
         slippage_pct (float): Slippage percentage.
         interval (str): Data interval (e.g., '1m' for 1-minute data).
+        sma_period (int): Period for the Simple Moving Average (SMA) indicator.
+        rsi_period (int): Period for the Relative Strength Index (RSI) indicator.
+        bbands_period (int): Period for the Bollinger Bands indicator.
+        atr_period (int): Period for the Average True Range (ATR) indicator.
 
     Returns:
         dict: Back test results.
@@ -88,10 +94,10 @@ def run_back_test(
         data,
         ticker,
         period,
-        sma_period=5,
-        rsi_period=7,
-        bbands_period=20,
-        atr_period=14,
+        sma_period=sma_period,
+        rsi_period=rsi_period,
+        bbands_period=bbands_period,
+        atr_period=atr_period,
     )
     signals = generate_signals(processed_data)
 
@@ -99,15 +105,11 @@ def run_back_test(
         initial_cash=initial_cash,
         transaction_cost=transaction_cost,
         leverage=leverage,
-        stop_loss_pct=stop_loss_pct,
-        take_profit_pct=take_profit_pct,
         slippage_pct=slippage_pct,
     )
     transactions = []
-
     equity_curve = []
     dates = []
-
     signals = signals.sort_index()
 
     for index, row in signals.iterrows():
@@ -117,21 +119,19 @@ def run_back_test(
         low_price = row["Low"]
         date = index
 
-        # Adjust stop-loss and take-profit dynamically based on ATR
-        executor.stop_loss_pct = row["ATR_Stop_Loss"] / price
-        executor.take_profit_pct = row["ATR_Take_Profit"] / price
+        atr_stop_loss = row["ATR_Stop_Loss"]
+        atr_take_profit = row["ATR_Take_Profit"]
 
-        # Execute the signal with high and low prices
-        executor.execute_signal(signal, price, date, high_price, low_price)
+        executor.execute_signal(
+            signal, price, date, high_price, low_price, atr_stop_loss, atr_take_profit
+        )
 
-        # Record transactions if new ones have occurred
         if executor.history and (
             not transactions or executor.history[-1] != transactions[-1]
         ):
             last_transaction = executor.history[-1]
             transactions.append(last_transaction)
 
-        # Update equity curve
         total_value = executor.get_total_portfolio_value(price)
         equity_curve.append(total_value)
         dates.append(date)

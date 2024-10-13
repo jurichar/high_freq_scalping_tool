@@ -53,19 +53,28 @@ def generate_signals(data):
         np.where(data["Close"] > data["BollingerB_Upper"], -1, 0),
     )
 
-    # Aggregate Signals
-    data["Signal"] = data["EMA_Signal"] + data["RSI_Signal"] + data["BB_Signal"]
+    # Assign weights to each signal
+    weights = {"EMA_Signal": 2, "RSI_Signal": 1, "BB_Signal": 1}
 
-    # Final Signal
+    # Calculate weighted score
+    data["Signal_Score"] = (
+        data["EMA_Signal"] * weights["EMA_Signal"]
+        + data["RSI_Signal"] * weights["RSI_Signal"]
+        + data["BB_Signal"] * weights["BB_Signal"]
+    )
+
+    # Define final signal based on threshold
     data["Signal"] = np.where(
-        data["Signal"] > 0, 1, np.where(data["Signal"] < 0, -1, 0)
+        data["Signal_Score"] >= 2, 1, np.where(data["Signal_Score"] <= -2, -1, 0)
     )
 
     # Filter duplicate signals
     data["Signal"] = data["Signal"].diff().fillna(data["Signal"])
 
     # Adjust stop-loss and take-profit using ATR
-    data["ATR_Stop_Loss"] = data["ATR"] * 1.5  # Multiplier can be adjusted
-    data["ATR_Take_Profit"] = data["ATR"] * 2  # Multiplier can be adjusted
+    data["ATR_Stop_Loss"] = data["ATR"] * 1.5
+    data["ATR_Take_Profit"] = data["ATR"] * 3
+
+    data = data.dropna(subset=["ATR_Stop_Loss", "ATR_Take_Profit"])
 
     return data[["Signal", "Close", "High", "Low", "ATR_Stop_Loss", "ATR_Take_Profit"]]
