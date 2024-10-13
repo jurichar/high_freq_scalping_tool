@@ -68,4 +68,4 @@ def generate_signals(data):
     data["ATR_Stop_Loss"] = data["ATR"] * 1.5  # Multiplier can be adjusted
     data["ATR_Take_Profit"] = data["ATR"] * 2  # Multiplier can be adjusted
 
-    return data[["Signal", "Close", "ATR_Stop_Loss", "ATR_Take_Profit"]]
+    return data[["Signal", "Close", "High", "Low", "ATR_Stop_Loss", "ATR_Take_Profit"]]

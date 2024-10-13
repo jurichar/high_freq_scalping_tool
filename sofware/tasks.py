@@ -113,14 +113,16 @@ def run_back_test(
     for index, row in signals.iterrows():
         signal = row["Signal"]
         price = row["Close"]
+        high_price = row["High"]
+        low_price = row["Low"]
         date = index
 
         # Adjust stop-loss and take-profit dynamically based on ATR
         executor.stop_loss_pct = row["ATR_Stop_Loss"] / price
         executor.take_profit_pct = row["ATR_Take_Profit"] / price
 
-        # Execute the signal
-        executor.execute_signal(signal, price, date)
+        # Execute the signal with high and low prices
+        executor.execute_signal(signal, price, date, high_price, low_price)
 
         # Record transactions if new ones have occurred
         if executor.history and (

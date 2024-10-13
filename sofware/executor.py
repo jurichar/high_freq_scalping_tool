@@ -88,12 +88,14 @@ class Position:
                 self.entry_price * (1 - take_profit_pct) if take_profit_pct else None
             )
 
-    def check_exit_conditions(self, current_price: float) -> bool:
+    def check_exit_conditions(self, high_price: float, low_price: float) -> bool:
         """
         Checks if the stop-loss or take-profit conditions are met.
 
         Args:
             current_price (float): Current price of the asset.
+            high_price (float): High price of the asset in this period.
+            low_price (float): Low price of the asset in this period.
 
         Returns:
             bool: True if the position should be closed, False otherwise.
@@ -101,13 +103,13 @@ class Position:
         Example:
         >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
         >>> pos.update_stop_loss_take_profit(0.05, 0.1)
-        >>> pos.check_exit_conditions(110)
+        >>> pos.check_exit_conditions(120, 90)
         True
         >>> pos.check_exit_conditions(120)
         True
         >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
         >>> pos.update_stop_loss_take_profit(0.05, 0.1)
-        >>> pos.check_exit_conditions(140)
+        >>> pos.check_exit_conditions(160, 130)
         False
         >>> pos.check_exit_conditions(130)
         True
@@ -118,20 +120,17 @@ class Position:
         epsilon = 1e-6
 
         if self.type == "long":
-            if self.stop_loss is not None and current_price <= self.stop_loss + epsilon:
+            if self.stop_loss is not None and low_price <= self.stop_loss + epsilon:
                 return True
             if (
                 self.take_profit is not None
-                and current_price >= self.take_profit - epsilon
+                and high_price >= self.take_profit - epsilon
             ):
                 return True
         elif self.type == "short":
-            if self.stop_loss is not None and current_price >= self.stop_loss - epsilon:
+            if self.stop_loss is not None and high_price >= self.stop_loss - epsilon:
                 return True
-            if (
-                self.take_profit is not None
-                and current_price <= self.take_profit + epsilon
-            ):
+            if self.take_profit is not None and low_price <= self.take_profit + epsilon:
                 return True
         return False
 
@@ -199,6 +198,24 @@ class TradingExecutor:
         self.positions = []
         self.history = []
         self.slippage_pct = slippage_pct
+
+    def update_positions_stop_loss_take_profit(self):
+        """
+        Updates the stop-loss and take-profit levels for all open positions.
+
+        Example:
+        >>> executor = TradingExecutor(initial_cash=10000)
+        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
+        >>> executor.update_positions_stop_loss_take_profit(0.05, 0.1)
+        >>> executor.positions[0].stop_loss
+        95.0
+        >>> executor.positions[0].take_profit
+        110.00000000000001
+        """
+        for position in self.positions:
+            position.update_stop_loss_take_profit(
+                self.stop_loss_pct, self.take_profit_pct
+            )
 
     def open_position(
         self, position_type: str, amount: int, price: float, date: pd.Timestamp
@@ -324,7 +341,7 @@ class TradingExecutor:
         except Exception as e:
             logging.error(f"Error closing position: {e}")
 
-    def check_positions(self, price, date):
+    def check_positions(self, price, date, high_price, low_price):
         """
         Checks positions to determine if stop-loss or take-profit conditions are met.
 
@@ -342,13 +359,13 @@ class TradingExecutor:
         True
         """
         for position in self.positions[:]:
-            if position.check_exit_conditions(price):
+            if position.check_exit_conditions(high_price, low_price):
                 logging.info(
                     f"Exit conditions met for {position.type} position at {price}."
                 )
                 self.close_position(position, price, date)
 
-    def execute_signal(self, signal, price, date):
+    def execute_signal(self, signal, price, date, high_price, low_price):
         """
         Executes a trading signal.
 
@@ -378,7 +395,8 @@ class TradingExecutor:
         >>> len(executor.positions) == 0
         True
         """
-        self.check_positions(price, date)
+        self.update_positions_stop_loss_take_profit()
+        self.check_positions(price, date, high_price, low_price)
 
         if signal == 1:
             short_positions = [p for p in self.positions if p.type == "short"]
