@@ -1,6 +1,7 @@
-# Algo Day Trading Bot
+# High-Frequency Scalping Tool
 
-An algorithmic trading bot for day trading with predictive models and strategies based on technical indicators. This project uses `yfinance` to fetch data, `scikit-learn` and `TensorFlow` for predictions, and `Flask` to expose a RESTful API.
+A high-frequency trading bot for day trading with predictive models (TBD) and strategies based on technical indicators.
+This project has the goal to provide a framework for developing and testing day trading strategies with a focus on scalping.
 
 ## 📚 Table des Matières
 
@@ -55,17 +56,19 @@ To start the bot, run:
 python main.py
 ```
 
-Access the API at `http://localhost:5000`.
+or start the jupyter notebook:
+
+```bash
+jupyter notebook
+```
 
 ## 🔍 Functionalities
 
 - Fetching historical data and technical indicators.
 - Tests and coverage with pytest.
-- Visualizing data with Matplotlib and Jupyter.
-- Open short and long positions with TP and SL.
-- Predicting price at N+1 (e.g., 5 minutes) with scikit-learn and TensorFlow.
-- Automated trading execution.
-- Back-end api with Flask.
+- Visualizing data and technical indicator with Matplotlib and Jupyter.
+- Trading operations like buy, sell, TP, SL, leverage, etc.
+- Backtesting framework.
 - Performance analysis and reporting.
 
 ## 🧪 Tests
@@ -80,6 +83,12 @@ or with only a specific test file:
 
 ```bash
 pytest --doctest-modules my_file.py
+```
+
+With coverage:
+
+```bash
+pytest --cov=./
 ```
 
 ## 🤝 Contribute
