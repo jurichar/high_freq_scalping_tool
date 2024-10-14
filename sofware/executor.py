@@ -429,18 +429,6 @@ class TradingExecutor:
 
         Args:
             current_price (float): Current price of the asset.
-
-        Example:
-            >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.display_portfolio(110)
-            <BLANKLINE>
-            ==============================
-            Current Portfolio Status:
-            Cash: $10000.00
-            Open Positions: 0
-            Total Portfolio Value: $10000.00
-            ==============================
-            <BLANKLINE>
         """
         try:
             total_value = self.get_total_portfolio_value(current_price)

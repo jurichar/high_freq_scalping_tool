@@ -14,46 +14,39 @@ import pandas as pd
 from datetime import datetime
 from sofware.data_processor import process_data
 from sofware.analysis import evaluate_performance
+from sofware.plot_draws import plot_drawdown, plot_equity_curve
+from sofware.utils import validate_data
 from .strategy import generate_signals
 from .data_collector import get_data_for_period
 from .executor import TradingExecutor
-import matplotlib.pyplot as plt
 
 
-def plot_equity_curve(equity_curve):
+def plot_results(equity_curve, dates):
     """
-    Plots the equity curve over time.
+    Plot the equity curve and drawdown of the back test results.
 
     Args:
-        equity_curve (pd.Series): The equity curve of the portfolio.
+        equity_curve (list): List of equity values over time.
+        dates (list): List of dates corresponding to the equity values.
     """
-    plt.figure(figsize=(14, 7))
-    equity_curve.plot()
-    plt.title("Equity Curve")
-    plt.xlabel("Date")
-    plt.ylabel("Portfolio Value ($)")
-    plt.grid(True)
-    plt.show()
-
-
-def plot_drawdown(equity_curve):
-    """
-    Plots the drawdown over time.
-
-    Args:
-        equity_curve (pd.Series): The equity curve of the portfolio.
-    """
-    drawdown = (equity_curve / equity_curve.cummax()) - 1
-    plt.figure(figsize=(14, 7))
-    drawdown.plot()
-    plt.title("Drawdown")
-    plt.xlabel("Date")
-    plt.ylabel("Drawdown (%)")
-    plt.grid(True)
-    plt.show()
+    equity_series = pd.Series(equity_curve, index=dates)
+    plot_equity_curve(equity_series)
+    plot_drawdown(equity_series)
 
 
 def fetch_data(ticker, start_date, end_date, interval="1d"):
+    """
+    Fetch historical data for a given stock ticker and date range.
+
+    Args:
+        ticker (str): The stock ticker symbol.
+        start_date (str): Start date for data collection.
+        end_date (str): End date for data collection.
+        interval (str): Data interval (e.g., '1d' for daily data).
+
+    Returns:
+        pd.DataFrame: DataFrame with historical stock data.
+    """
     data = get_data_for_period(
         ticker=ticker,
         start_date=start_date,
@@ -159,19 +152,6 @@ def build_backtest_report(transactions, equity_curve, signals, performance_metri
         "signals": signals,
         "performance_metrics": performance_metrics,
     }
-
-
-def validate_data(data):
-    if not isinstance(data, pd.DataFrame) or data.empty:
-        logging.error("Invalid or empty data.")
-        return False
-    return True
-
-
-def plot_results(equity_curve, dates):
-    equity_series = pd.Series(equity_curve, index=dates)
-    plot_equity_curve(equity_series)
-    plot_drawdown(equity_series)
 
 
 def execute_trades(
