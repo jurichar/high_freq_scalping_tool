@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 
-def generate_signals(data):
+def generate_signals(data, ema_short=5, ema_long=10, rsi_period=7, bbands_period=20):
     """
     Generate buy/sell signals based on a scalping strategy.
 
@@ -29,15 +29,17 @@ def generate_signals(data):
     data = data.sort_index()
 
     # Short-term EMAs
-    data["EMA_5"] = data["Close"].ewm(span=5, adjust=False).mean()
-    data["EMA_10"] = data["Close"].ewm(span=10, adjust=False).mean()
+    data[f"EMA_{ema_short}"] = data["Close"].ewm(span=ema_short, adjust=False).mean()
+    data[f"EMA_{ema_long}"] = data["Close"].ewm(span=ema_long, adjust=False).mean()
 
     # EMA Crossover Signal
     data["EMA_Signal"] = 0
-    data["EMA_Signal"] = np.where(data["EMA_5"] > data["EMA_10"], 1, -1)
+    data["EMA_Signal"] = np.where(
+        data[f"EMA_{ema_short}"] > data[f"EMA_{ema_long}"], 1, -1
+    )
 
     # Short-term RSI
-    data["RSI_Short"] = data["RSI"].rolling(window=7).mean()
+    data["RSI_Short"] = data["RSI"].rolling(window=rsi_period).mean()
 
     # RSI Signal
     data["RSI_Signal"] = 0
@@ -71,11 +73,7 @@ def generate_signals(data):
     # Vectorize signal score calculation using np.dot for efficiency
     signal_columns = ["EMA_Signal", "RSI_Signal", "BB_Signal", "MACD_Signal_Strength"]
     signal_weights = np.array([weights[col] for col in signal_columns])
-
     data["Signal_Score"] = np.dot(data[signal_columns].values, signal_weights)
-
-    # Drop NaN values once, rather than multiple times
-    data.dropna(subset=["ATR_Stop_Loss", "ATR_Take_Profit"], inplace=True)
 
     # Define final signal based on threshold
     data["Signal"] = np.where(

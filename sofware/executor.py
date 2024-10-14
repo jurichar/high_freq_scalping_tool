@@ -15,6 +15,8 @@ import logging
 import pandas as pd
 from datetime import datetime
 
+from sofware.utils import calculate_exit_prices
+
 
 class Position:
 
@@ -47,7 +49,7 @@ class Position:
         self.closed = False
         self.exit_price = None
         self.exit_date = None
-        self.profit_loss = 0.0
+        self.pnl = 0.0
 
     def check_exit_conditions(self, high_price: float, low_price: float) -> bool:
         """
@@ -62,18 +64,19 @@ class Position:
             bool: True if the position should be closed, False otherwise.
 
         Example:
-            >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
-            >>> pos.check_exit_conditions(140, 160)
+            >>> pos = Position(position_type='short', amount=5, entry_price=150, entry_date=pd.Timestamp('2023-01-01'))
+            # short: 5 * (150) = 750
+            >>> pos.check_exit_conditions(high_price=140, low_price=160)
             False
 
-            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
+            >>> pos = Position(position_type='long', amount=10, entry_price=100, entry_date=pd.Timestamp('2023-01-01'))
             >>> pos.take_profit = 110
-            >>> pos.check_exit_conditions(120, 90)
+            >>> pos.check_exit_conditions(high_price=120, low_price=90)
             True
 
-            >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
+            >>> pos = Position(position_type='short', amount=5, entry_price=150, entry_date=pd.Timestamp('2023-01-01'))
             >>> pos.stop_loss = 140
-            >>> pos.check_exit_conditions(140, 160)
+            >>> pos.check_exit_conditions(high_price=140, low_price=160)
             True
         """
         if self.closed:
@@ -81,24 +84,30 @@ class Position:
 
         epsilon = 1e-6
 
+        # Long position
         if self.type == "long":
+            # Check if stop-loss conditions are met
             if self.stop_loss is not None and low_price <= self.stop_loss + epsilon:
                 return True
+            # Check if take-profit conditions are met
             if (
                 self.take_profit is not None
                 and high_price >= self.take_profit - epsilon
             ):
                 return True
+        # Short position
         elif self.type == "short":
+            # Check if stop-loss conditions are met
             if self.stop_loss is not None and high_price >= self.stop_loss - epsilon:
                 return True
+            # Check if take-profit conditions are met
             if self.take_profit is not None and low_price <= self.take_profit + epsilon:
                 return True
         return False
 
     def close(self, exit_price: float, exit_date: pd.Timestamp) -> None:
         """
-        Closes the position and calculates the profit or loss.
+        Closes the position and calculates the pnl (profit or loss).
 
         Args:
             exit_price (float): Exit price.
@@ -107,14 +116,14 @@ class Position:
         Example:
             >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
             >>> pos.close(110, pd.Timestamp('2023-02-01'))
-            >>> pos.profit_loss
+            >>> pos.pnl
             100
             >>> pos.closed
             True
 
             >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
             >>> pos.close(140, pd.Timestamp('2023-02-01'))
-            >>> pos.profit_loss
+            >>> pos.pnl
             50
             >>> pos.closed
             True
@@ -124,9 +133,9 @@ class Position:
         self.closed = True
 
         if self.type == "long":
-            self.profit_loss = (self.exit_price - self.entry_price) * self.amount
+            self.pnl = (self.exit_price - self.entry_price) * self.amount
         elif self.type == "short":
-            self.profit_loss = (self.entry_price - self.exit_price) * self.amount
+            self.pnl = (self.entry_price - self.exit_price) * self.amount
 
 
 class TradingExecutor:
@@ -222,21 +231,9 @@ class TradingExecutor:
         try:
             position_size = self.calculate_position_size(price, stop_loss_pct)
 
-            if position_size <= 0:
-                logging.warning("Calculated position size is zero. Skipping trade.")
-                return
-
-            if position_type == "long":
-                stop_loss = price * (1 - stop_loss_pct)
-                take_profit = price * (1 + take_profit_pct)
-                adjusted_price = price * (1 + self.slippage_pct)
-            elif position_type == "short":
-                stop_loss = price * (1 + stop_loss_pct)
-                take_profit = price * (1 - take_profit_pct)
-                adjusted_price = price * (1 - self.slippage_pct)
-            else:
-                logging.error(f"Unknown position type: {position_type}")
-                return
+            stop_loss, take_profit, adjusted_price = calculate_exit_prices(
+                position_type, price, stop_loss_pct, take_profit_pct, self.slippage_pct
+            )
 
             total_cost = adjusted_price * position_size * (1 + self.transaction_cost)
             margin_required = total_cost / self.leverage
@@ -330,7 +327,7 @@ class TradingExecutor:
                     "price": adjusted_price,
                     "amount": amount,
                     "date": date,
-                    "profit_loss": position.profit_loss,
+                    "pnl": position.pnl,
                 }
             )
             self.positions.remove(position)

@@ -61,6 +61,24 @@ def plot_drawdown(equity_curve):
     plt.show()
 
 
+def fetch_data(ticker, start_date, end_date, interval="1d"):
+    data = get_data_for_period(
+        ticker=ticker,
+        start_date=start_date,
+        end_date=end_date,
+        interval=interval,
+        save_to_csv=False,
+    )
+
+    if data.empty:
+        logging.error("No data fetched. Exiting backtest.")
+        return {}
+
+    period = f"{start_date}_{end_date}"
+    logging.info(f"Processing data for {ticker} ({period})...")
+    return data
+
+
 def run_back_test(
     ticker,
     start_date,
@@ -99,22 +117,17 @@ def run_back_test(
     """
     print(f"Running back tests for {ticker} from {start_date} to {end_date}...")
 
-    # Fetch data
-    data = get_data_for_period(
-        ticker, start_date, end_date, interval=interval, save_to_csv=False
-    )
+    data = fetch_data(ticker, start_date, end_date, interval)
 
-    if data.empty:
-        logging.error("No data fetched. Exiting backtest.")
+    if not isinstance(data, pd.DataFrame) or data.empty:
+        logging.error(
+            "Data is not a valid pandas DataFrame or is empty. Exiting backtest."
+        )
         return {}
 
-    # Process data
-    period = f"{start_date}_{end_date}"
-    logging.info(f"Processing data for {ticker} ({period})...")
     processed_data = process_data(
         data,
         ticker,
-        period,
         sma_period=sma_period,
         rsi_period=rsi_period,
         bbands_period=bbands_period,
@@ -128,7 +141,35 @@ def run_back_test(
         logging.warning("No signals generated. Exiting backtest.")
         return {}
 
-    # Initialize executor
+    transactions, equity_curve, dates = execute_trades(
+        signals,
+        initial_cash,
+        transaction_cost,
+        leverage,
+        slippage_pct,
+        risk_per_trade,
+    )
+
+    performance_metrics = evaluate_performance(transactions, equity_curve, initial_cash)
+
+    if equity_curve:
+        equity_series = pd.Series(equity_curve, index=dates)
+        plot_equity_curve(equity_series)
+        plot_drawdown(equity_series)
+    else:
+        logging.warning("Equity curve is empty. No plots to display.")
+
+    return {
+        "transactions": transactions,
+        "equity_curve": pd.Series(equity_curve, index=dates),
+        "signals": signals,
+        "performance_metrics": performance_metrics,
+    }
+
+
+def execute_trades(
+    signals, initial_cash, transaction_cost, leverage, slippage_pct, risk_per_trade
+):
     executor = TradingExecutor(
         initial_cash=initial_cash,
         transaction_cost=transaction_cost,
@@ -167,55 +208,36 @@ def run_back_test(
         equity_curve.append(total_value)
         dates.append(date)
 
-    # Final Portfolio Value
-    final_value = executor.get_total_portfolio_value(price)
+    return transactions, equity_curve, dates
+
+
+def evaluate_performance(transactions, equity_curve, initial_cash):
+    """
+    Evaluate the performance of the trading strategy.
+
+    Args:
+        transactions (list): List of transaction dictionaries.
+        equity_curve (list): List of equity values over time.
+        initial_cash (float): Initial cash value.
+
+    Returns:
+        dict: Performance metrics of the trading strategy.
+    """
+    final_value = equity_curve[-1]
     pct_return = calculate_percentage_return(initial_cash, final_value)
     max_drawdown = calculate_max_drawdown(pd.Series(equity_curve))
-    sharpe_ratio = calculate_sharpe_ratio(pd.Series(equity_curve).pct_change().dropna())
-    sortino_ratio = calculate_sortino_ratio(
-        pd.Series(equity_curve).pct_change().dropna()
-    )
+    sharpe_ratio = calculate_sharpe_ratio(pd.Series(equity_curve).pct_change())
+    sortino_ratio = calculate_sortino_ratio(pd.Series(equity_curve).pct_change())
     calmar_ratio = calculate_calmar_ratio(pct_return, max_drawdown)
     win_loss_ratio = calculate_win_loss_ratio(transactions)
     profit_factor = calculate_profit_factor(transactions)
 
-    print(f"Percentage Return: {pct_return:.2f}%")
-    print(f"Max Drawdown: {max_drawdown:.2f}%")
-    print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
-    print(f"Sortino Ratio: {sortino_ratio:.2f}")
-    print(f"Calmar Ratio: {calmar_ratio:.2f}")
-    print(f"Win/Loss Ratio: {win_loss_ratio:.2f}")
-    print(f"Profit Factor: {profit_factor:.2f}")
-    print("Transaction History:")
-    for txn in transactions:
-        action = txn["action"]
-        pos_type = txn.get("position_type", "")
-        price = txn["price"]
-        amount = txn["amount"]
-        date = txn["date"]
-        pnl = txn.get("profit_loss", "")
-        print(f"{date}: {action} {pos_type} {amount} at ${price:.2f} P&L: {pnl}")
-
-    # Plot equity curve and drawdown
-    if equity_curve:
-        equity_series = pd.Series(equity_curve, index=dates)
-        plot_equity_curve(equity_series)
-        plot_drawdown(equity_series)
-    else:
-        logging.warning("Equity curve is empty. No plots to display.")
-
     return {
-        "executor": executor,
-        "transactions": transactions,
-        "equity_curve": pd.Series(equity_curve, index=dates),
-        "signals": signals,
-        "performance_metrics": {
-            "Percentage Return": pct_return,
-            "Max Drawdown": max_drawdown,
-            "Sharpe Ratio": sharpe_ratio,
-            "Sortino Ratio": sortino_ratio,
-            "Calmar Ratio": calmar_ratio,
-            "Win/Loss Ratio": win_loss_ratio,
-            "Profit Factor": profit_factor,
-        },
+        "Percentage Return": pct_return,
+        "Max Drawdown": max_drawdown,
+        "Sharpe Ratio": sharpe_ratio,
+        "Sortino Ratio": sortino_ratio,
+        "Calmar Ratio": calmar_ratio,
+        "Win/Loss Ratio": win_loss_ratio,
+        "Profit Factor": profit_factor,
     }
