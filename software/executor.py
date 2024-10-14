@@ -15,7 +15,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 
-from sofware.utils import (
+from software.utils import (
     apply_slippage,
     calculate_exit_prices,
     calculate_proceeds,

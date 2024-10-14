@@ -12,10 +12,10 @@ Functions:
 import logging
 import pandas as pd
 from datetime import datetime
-from sofware.data_processor import process_data
-from sofware.analysis import evaluate_performance
-from sofware.plot_draws import plot_drawdown, plot_equity_curve
-from sofware.utils import validate_data
+from software.data_processor import process_data
+from software.analysis import evaluate_performance
+from software.plot_draws import plot_drawdown, plot_equity_curve
+from software.utils import validate_data
 from .strategy import generate_signals
 from .data_collector import get_data_for_period
 from .executor import TradingExecutor
@@ -76,6 +76,7 @@ def run_back_test(
     risk_per_trade=0.01,
     interval="1m",
     sma_period=5,
+    ema_period=20,
     rsi_period=7,
     bbands_period=20,
     atr_period=14,
@@ -110,6 +111,7 @@ def run_back_test(
             data=data,
             ticker=ticker,
             sma_period=sma_period,
+            ema_period=ema_period,
             rsi_period=rsi_period,
             bbands_period=bbands_period,
             atr_period=atr_period,

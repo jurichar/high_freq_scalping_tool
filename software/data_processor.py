@@ -114,16 +114,16 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_technical_indicators(
-    data, sma_period=5, rsi_period=14, bbands_period=20, atr_period=14
+    data, sma_period=5, ema_period=20, rsi_period=14, bbands_period=20, atr_period=14
 ) -> pd.DataFrame:
     """
     Add technical indicators to the stock data.
 
     - Simple Moving Average (SMA).
+    - Exponential Moving Average (EMA).
     - Relative Strength Index (RSI).
     - Moving Average Convergence Divergence (MACD).
     - Bollinger Bands.
-    - Exponential Moving Average (EMA).
     - Average True Range (ATR) for risk management.
 
     Args:
@@ -139,7 +139,7 @@ def add_technical_indicators(
     Tests:
         >>> data = pd.DataFrame({"Close": [100, 101, 102, 103, 104],"High": [105, 106, 107, 108, 109],"Low": [95, 96, 97, 98, 99]})
         >>> data_with_indicators = add_technical_indicators(data)
-        >>> 'SMA_5' in data_with_indicators.columns
+        >>> 'SMA' in data_with_indicators.columns
         True
         >>> 'RSI' in data_with_indicators.columns
         True
@@ -153,25 +153,23 @@ def add_technical_indicators(
                 f"Data must contain the following columns: {', '.join(required_columns)}"
             )
 
-        bbands = ta.bbands(data["Close"], length=bbands_period)
-
-        data[f"SMA_{sma_period}"] = ta.sma(data["Close"], length=sma_period)
+        data["SMA"] = ta.sma(data["Close"], length=sma_period)
+        data["EMA"] = ta.ema(data["Close"], length=ema_period)
         data["RSI"] = ta.rsi(data["Close"], length=rsi_period)
+        data["ATR"] = ta.atr(
+            data["High"], data["Low"], data["Close"], length=atr_period
+        )
 
-        macd = ta.macd(data["Close"])
+        macd = ta.macd(data["Close"], fast=12, slow=26, signal=9)
         if macd is not None:
             data["MACD"] = macd["MACD_12_26_9"]
             data["MACD_Signal"] = macd["MACDs_12_26_9"]
             data["MACD_Histogram"] = macd["MACDh_12_26_9"]
 
+        bbands = ta.bbands(data["Close"], length=bbands_period)
         if bbands is not None:
             data["BollingerB_Lower"] = bbands[f"BBL_{bbands_period}_2.0"]
             data["BollingerB_Upper"] = bbands[f"BBU_{bbands_period}_2.0"]
-
-        data["EMA"] = ta.ema(data["Close"])
-        data["ATR"] = ta.atr(
-            data["High"], data["Low"], data["Close"], length=atr_period
-        )
 
         return data
 
@@ -263,6 +261,7 @@ def process_data(
     ticker: str = "MSFT",
     period: str = "3mo",
     sma_period=5,
+    ema_period=20,
     rsi_period=14,
     bbands_period=20,
     atr_period=14,
@@ -290,7 +289,7 @@ def process_data(
     try:
         data = clean_data(data)
         data = add_technical_indicators(
-            data, sma_period, rsi_period, bbands_period, atr_period
+            data, sma_period, ema_period, rsi_period, bbands_period, atr_period
         )
         # data = normalize_data(data)  # Uncomment to normalize the data
         save_processed_data(data, ticker, period)
