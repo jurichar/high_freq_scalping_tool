@@ -1,4 +1,3 @@
-# Module to predict stock prices
 """
 predictor.py
 
