@@ -62,18 +62,19 @@ class Position:
             bool: True if the position should be closed, False otherwise.
 
         Example:
-        >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> pos.update_stop_loss_take_profit(0.05, 0.1)
-        >>> pos.check_exit_conditions(120, 90)
-        True
-        >>> pos.check_exit_conditions(120)
-        True
-        >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
-        >>> pos.update_stop_loss_take_profit(0.05, 0.1)
-        >>> pos.check_exit_conditions(160, 130)
-        False
-        >>> pos.check_exit_conditions(130)
-        True
+            >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
+            >>> pos.check_exit_conditions(140, 160)
+            False
+
+            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
+            >>> pos.take_profit = 110
+            >>> pos.check_exit_conditions(120, 90)
+            True
+
+            >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
+            >>> pos.stop_loss = 140
+            >>> pos.check_exit_conditions(140, 160)
+            True
         """
         if self.closed:
             return False
@@ -104,19 +105,19 @@ class Position:
             exit_date (pd.Timestamp): Exit date.
 
         Example:
-        >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> pos.close(110, pd.Timestamp('2023-02-01'))
-        >>> pos.profit_loss
-        100
-        >>> pos.closed
-        True
+            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
+            >>> pos.close(110, pd.Timestamp('2023-02-01'))
+            >>> pos.profit_loss
+            100
+            >>> pos.closed
+            True
 
-        >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
-        >>> pos.close(140, pd.Timestamp('2023-02-01'))
-        >>> pos.profit_loss
-        50
-        >>> pos.closed
-        True
+            >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
+            >>> pos.close(140, pd.Timestamp('2023-02-01'))
+            >>> pos.profit_loss
+            50
+            >>> pos.closed
+            True
         """
         self.exit_price = exit_price
         self.exit_date = exit_date
@@ -159,6 +160,30 @@ class TradingExecutor:
         self.slippage_pct = slippage_pct
         self.risk_per_trade = risk_per_trade
 
+    def calculate_position_size(self, price: float, stop_loss_pct: float) -> float:
+        """
+        Calculates the optimal position size based on available risk and cash.
+
+        Args:
+            price (float): Current price of the asset.
+            stop_loss_pct (float): Stop-loss percentage.
+
+        Returns:
+            float: The maximum position size.
+        """
+        atr_stop_loss_dollar = stop_loss_pct * price
+        equity = self.get_total_portfolio_value(price)
+        risk_amount = equity * self.risk_per_trade
+
+        if atr_stop_loss_dollar > risk_amount:
+            logging.warning(
+                "Stop-loss dollar value exceeds risk amount. Reducing position size."
+            )
+            return self.cash / price
+
+        position_size = risk_amount / atr_stop_loss_dollar
+        return position_size
+
     def open_position(
         self,
         position_type: str,
@@ -178,41 +203,24 @@ class TradingExecutor:
             take_profit_pct (float): Take-profit percentage.
 
         Example:
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> len(executor.positions) == 1
-        True
-        >>> executor.cash < 10000
-        True
-        >>> executor.open_position('short', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> len(executor.positions) == 2
-        True
+            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> len(executor.positions) == 1
+            True
+            >>> executor.cash < 10000
+            True
+            >>> executor.open_position('short', 10, 100, pd.Timestamp('2023-01-01'))
+            >>> len(executor.positions) == 2
+            True
 
-        >>> executor = TradingExecutor(initial_cash=100)
-        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> len(executor.positions) == 0
-        True
+            >>> executor = TradingExecutor(initial_cash=100)
+            >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> len(executor.positions) == 0
+            True
         """
 
         try:
-            if stop_loss_pct <= 0 or take_profit_pct <= 0:
-                logging.error("Stop-loss and take-profit percentages must be positive.")
-                return
-
-            atr_stop_loss_dollar = stop_loss_pct * price
-            print(f"Price: {price}")
-            print(f"Stop_Loss_Pct: {stop_loss_pct}")
-            print(f"ATR_Stop_Loss_Dollar: {atr_stop_loss_dollar}")
-            equity = self.get_total_portfolio_value(price)
-            print(f"Equity: {equity}, Risk Amount: {equity * self.risk_per_trade}")
-
-            risk_amount = equity * self.risk_per_trade
-            print(f"Risk Amount: {risk_amount}")
-
-            position_size = risk_amount / atr_stop_loss_dollar
-            print(
-                f"ATR_Stop_Loss_Dollar: {atr_stop_loss_dollar}, Position Size: {position_size}"
-            )
+            position_size = self.calculate_position_size(price, stop_loss_pct)
 
             if position_size <= 0:
                 logging.warning("Calculated position size is zero. Skipping trade.")
@@ -232,8 +240,8 @@ class TradingExecutor:
 
             total_cost = adjusted_price * position_size * (1 + self.transaction_cost)
             margin_required = total_cost / self.leverage
-            print(f"Total Cost: {total_cost}")
-            print(f"Margin Required: {margin_required}")
+            logging.info(f"Total Cost: {total_cost}")
+            logging.info(f"Margin Required: {margin_required}")
 
             if margin_required > self.cash:
                 logging.warning(
@@ -250,7 +258,7 @@ class TradingExecutor:
                 return
 
             self.cash -= margin_required
-            print(f"Cash after opening position: ${self.cash:.2f}")
+            logging.info(f"Cash after opening position: ${self.cash:.2f}")
 
             position = Position(
                 position_type=position_type,
@@ -278,6 +286,7 @@ class TradingExecutor:
 
         except Exception as e:
             logging.error(f"Error opening position: {e}")
+            raise RuntimeError(f"Failed to open position due to: {e}")
 
     def close_position(
         self, position: Position, price: float, date: pd.Timestamp
@@ -291,14 +300,14 @@ class TradingExecutor:
             date (pd.Timestamp): Transaction date.
 
         Example:
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> len(executor.positions) == 1
-        True
-        >>> position = executor.positions[0]
-        >>> executor.close_position(position, 110, pd.Timestamp('2023-02-01'))
-        >>> len(executor.positions) == 0
-        True
+            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> len(executor.positions) == 1
+            True
+            >>> position = executor.positions[0]
+            >>> executor.close_position(position, 110, pd.Timestamp('2023-02-01'))
+            >>> len(executor.positions) == 0
+            True
         """
         try:
             amount = position.amount
@@ -337,13 +346,12 @@ class TradingExecutor:
             date (pd.Timestamp): Current date.
 
         Example:
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> position = executor.positions[0]
-        >>> position.update_stop_loss_take_profit(0.05, 0.1)
-        >>> executor.check_positions(120, pd.Timestamp('2023-02-01'))
-        >>> len(executor.positions) == 0
-        True
+            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> position = executor.positions[0]
+            >>> executor.check_positions(120, pd.Timestamp('2023-02-01'), 120, 90)
+            >>> len(executor.positions) == 0
+            True
         """
         for position in self.positions[:]:
             if position.check_exit_conditions(high_price, low_price):
@@ -351,6 +359,18 @@ class TradingExecutor:
                     f"Exit conditions met for {position.type} position at {price}."
                 )
                 self.close_position(position, price, date)
+
+    def has_open_position(self, position_type: str) -> bool:
+        """
+        Checks if there is an open position of the given type.
+
+        Args:
+            position_type (str): 'long' or 'short'
+
+        Returns:
+            bool: True if there is an open position, False otherwise.
+        """
+        return any(p.type == position_type and not p.closed for p in self.positions)
 
     def execute_signal(
         self, signal, price, date, high_price, low_price, atr_stop_loss, atr_take_profit
@@ -372,29 +392,15 @@ class TradingExecutor:
         """
         self.check_positions(price, date, high_price, low_price)
 
-        if signal == 1:
-            # Close existing short positions before opening long
-            short_positions = [p for p in self.positions if p.type == "short"]
-            for position in short_positions:
-                self.close_position(position, price, date)
+        if signal == 1 and not self.has_open_position("long"):
+            self.open_position(
+                "long", price, date, atr_stop_loss / price, atr_take_profit / price
+            )
 
-            # Open new long position if not already in a long position
-            if not any(p.type == "long" for p in self.positions):
-                self.open_position(
-                    "long", price, date, atr_stop_loss / price, atr_take_profit / price
-                )
-
-        elif signal == -1:
-            # Close existing long positions before opening short
-            long_positions = [p for p in self.positions if p.type == "long"]
-            for position in long_positions:
-                self.close_position(position, price, date)
-
-            # Open new short position if not already in a short position
-            if not any(p.type == "short" for p in self.positions):
-                self.open_position(
-                    "short", price, date, atr_stop_loss / price, atr_take_profit / price
-                )
+        elif signal == -1 and not self.has_open_position("short"):
+            self.open_position(
+                "short", price, date, atr_stop_loss / price, atr_take_profit / price
+            )
 
     def get_total_portfolio_value(self, current_price):
         """
@@ -407,20 +413,12 @@ class TradingExecutor:
             float: Total value of the portfolio.
 
         Example:
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.get_total_portfolio_value(110)
-        10000.0
-
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> executor.get_total_portfolio_value(110)
-        9099.0
-
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.open_position('short', 10, 100, pd.Timestamp('2023-01-01'))
-        >>> executor.get_total_portfolio_value(90)
-        9099.0
-
+            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor.get_total_portfolio_value(110)
+            10000.0
+            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> executor.get_total_portfolio_value(110)
+            9099.0
         """
         try:
             position_value = 0.0
@@ -444,16 +442,16 @@ class TradingExecutor:
             current_price (float): Current price of the asset.
 
         Example:
-        >>> executor = TradingExecutor(initial_cash=10000)
-        >>> executor.display_portfolio(110)
-        <BLANKLINE>
-        ==============================
-        Current Portfolio Status:
-        Cash: $10000.00
-        Open Positions: 0
-        Total Portfolio Value: $10000.00
-        ==============================
-        <BLANKLINE>
+            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor.display_portfolio(110)
+            <BLANKLINE>
+            ==============================
+            Current Portfolio Status:
+            Cash: $10000.00
+            Open Positions: 0
+            Total Portfolio Value: $10000.00
+            ==============================
+            <BLANKLINE>
         """
         try:
             total_value = self.get_total_portfolio_value(current_price)

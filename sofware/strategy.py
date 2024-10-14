@@ -68,13 +68,14 @@ def generate_signals(data):
         "MACD_Signal_Strength": 1,
     }
 
-    # Calculate weighted score
-    data["Signal_Score"] = (
-        data["EMA_Signal"] * weights["EMA_Signal"]
-        + data["RSI_Signal"] * weights["RSI_Signal"]
-        + data["BB_Signal"] * weights["BB_Signal"]
-        + data["MACD_Signal_Strength"] * weights["MACD_Signal_Strength"]
-    )
+    # Vectorize signal score calculation using np.dot for efficiency
+    signal_columns = ["EMA_Signal", "RSI_Signal", "BB_Signal", "MACD_Signal_Strength"]
+    signal_weights = np.array([weights[col] for col in signal_columns])
+
+    data["Signal_Score"] = np.dot(data[signal_columns].values, signal_weights)
+
+    # Drop NaN values once, rather than multiple times
+    data.dropna(subset=["ATR_Stop_Loss", "ATR_Take_Profit"], inplace=True)
 
     # Define final signal based on threshold
     data["Signal"] = np.where(
