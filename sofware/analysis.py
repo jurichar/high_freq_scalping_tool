@@ -134,3 +134,35 @@ def calculate_profit_factor(transactions):
     if gross_loss == 0:
         return np.nan
     return gross_profit / gross_loss
+
+
+def evaluate_performance(transactions, equity_curve, initial_cash):
+    """
+    Evaluate the performance of the trading strategy.
+
+    Args:
+        transactions (list): List of transaction dictionaries.
+        equity_curve (list): List of equity values over time.
+        initial_cash (float): Initial cash value.
+
+    Returns:
+        dict: Performance metrics of the trading strategy.
+    """
+    final_value = equity_curve[-1]
+    pct_return = calculate_percentage_return(initial_cash, final_value)
+    max_drawdown = calculate_max_drawdown(pd.Series(equity_curve))
+    sharpe_ratio = calculate_sharpe_ratio(pd.Series(equity_curve).pct_change())
+    sortino_ratio = calculate_sortino_ratio(pd.Series(equity_curve).pct_change())
+    calmar_ratio = calculate_calmar_ratio(pct_return, max_drawdown)
+    win_loss_ratio = calculate_win_loss_ratio(transactions)
+    profit_factor = calculate_profit_factor(transactions)
+
+    return {
+        "Percentage Return": pct_return,
+        "Max Drawdown": max_drawdown,
+        "Sharpe Ratio": sharpe_ratio,
+        "Sortino Ratio": sortino_ratio,
+        "Calmar Ratio": calmar_ratio,
+        "Win/Loss Ratio": win_loss_ratio,
+        "Profit Factor": profit_factor,
+    }

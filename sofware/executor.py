@@ -15,7 +15,12 @@ import logging
 import pandas as pd
 from datetime import datetime
 
-from sofware.utils import calculate_exit_prices
+from sofware.utils import (
+    apply_slippage,
+    calculate_exit_prices,
+    calculate_proceeds,
+    calculate_size,
+)
 
 
 class Position:
@@ -180,18 +185,12 @@ class TradingExecutor:
         Returns:
             float: The maximum position size.
         """
-        atr_stop_loss_dollar = stop_loss_pct * price
-        equity = self.get_total_portfolio_value(price)
-        risk_amount = equity * self.risk_per_trade
-
-        if atr_stop_loss_dollar > risk_amount:
-            logging.warning(
-                "Stop-loss dollar value exceeds risk amount. Reducing position size."
-            )
-            return self.cash / price
-
-        position_size = risk_amount / atr_stop_loss_dollar
-        return position_size
+        return calculate_size(
+            price,
+            self.get_total_portfolio_value(price),
+            stop_loss_pct,
+            self.risk_per_trade,
+        )
 
     def open_position(
         self,
@@ -307,17 +306,10 @@ class TradingExecutor:
             True
         """
         try:
-            amount = position.amount
-
-            if position.type == "long":
-                adjusted_price = price * (1 - self.slippage_pct)
-            elif position.type == "short":
-                adjusted_price = price * (1 + self.slippage_pct)
-            else:
-                logging.error(f"Unknown position type: {position.type}")
-                return
-
-            proceeds = adjusted_price * amount * (1 - self.transaction_cost)
+            adjusted_price = apply_slippage(price, position.type, self.slippage_pct)
+            proceeds = calculate_proceeds(
+                adjusted_price, position.amount, self.transaction_cost
+            )
             position.close(adjusted_price, date)
             self.cash += proceeds
             self.history.append(
@@ -325,7 +317,7 @@ class TradingExecutor:
                     "action": "close",
                     "position_type": position.type,
                     "price": adjusted_price,
-                    "amount": amount,
+                    "amount": position.amount,
                     "date": date,
                     "pnl": position.pnl,
                 }

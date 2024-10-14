@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 
-def generate_signals(data, ema_short=5, ema_long=10, rsi_period=7, bbands_period=20):
+def generate_signals(data, ema_short=5, ema_long=10, rsi_period=7):
     """
     Generate buy/sell signals based on a scalping strategy.
 
