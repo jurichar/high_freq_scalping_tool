@@ -53,19 +53,32 @@ def generate_signals(data):
         np.where(data["Close"] > data["BollingerB_Upper"], -1, 0),
     )
 
+    # MACD Signal
+    data["MACD_Signal_Strength"] = np.where(
+        (data["MACD"] > data["MACD_Signal"]),
+        1,
+        np.where((data["MACD"] < data["MACD_Signal"]), -1, 0),
+    )
+
     # Assign weights to each signal
-    weights = {"EMA_Signal": 2, "RSI_Signal": 1, "BB_Signal": 1}
+    weights = {
+        "EMA_Signal": 2,
+        "RSI_Signal": 1,
+        "BB_Signal": 1,
+        "MACD_Signal_Strength": 1,
+    }
 
     # Calculate weighted score
     data["Signal_Score"] = (
         data["EMA_Signal"] * weights["EMA_Signal"]
         + data["RSI_Signal"] * weights["RSI_Signal"]
         + data["BB_Signal"] * weights["BB_Signal"]
+        + data["MACD_Signal_Strength"] * weights["MACD_Signal_Strength"]
     )
 
     # Define final signal based on threshold
     data["Signal"] = np.where(
-        data["Signal_Score"] >= 2, 1, np.where(data["Signal_Score"] <= -2, -1, 0)
+        data["Signal_Score"] >= 3, 1, np.where(data["Signal_Score"] <= -3, -1, 0)
     )
 
     # Filter duplicate signals
@@ -75,6 +88,8 @@ def generate_signals(data):
     data["ATR_Stop_Loss"] = data["ATR"] * 1.5
     data["ATR_Take_Profit"] = data["ATR"] * 3
 
-    data = data.dropna(subset=["ATR_Stop_Loss", "ATR_Take_Profit"])
+    data = data.dropna(
+        subset=["ATR_Stop_Loss", "ATR_Take_Profit", "MACD", "MACD_Signal"]
+    )
 
     return data[["Signal", "Close", "High", "Low", "ATR_Stop_Loss", "ATR_Take_Profit"]]

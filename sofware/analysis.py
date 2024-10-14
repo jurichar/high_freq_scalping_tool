@@ -80,3 +80,57 @@ def calculate_sortino_ratio(returns, risk_free_rate=0):
     if downside_deviation == 0 or np.isnan(downside_deviation):
         return np.nan
     return expected_return / downside_deviation
+
+
+def calculate_calmar_ratio(percentage_return, max_drawdown):
+    """
+    Calculate the Calmar Ratio.
+
+    Args:
+        percentage_return (float): The percentage return of the strategy.
+        max_drawdown (float): The maximum drawdown percentage.
+
+    Returns:
+        float: Calmar Ratio.
+    """
+    if max_drawdown == 0:
+        return np.nan
+    return percentage_return / abs(max_drawdown)
+
+
+def calculate_win_loss_ratio(transactions):
+    """
+    Calculate the Win/Loss Ratio.
+
+    Args:
+        transactions (list): List of transaction dictionaries.
+
+    Returns:
+        float: Win/Loss Ratio.
+    """
+    wins = sum(1 for txn in transactions if txn.get("profit_loss", 0) > 0)
+    losses = sum(1 for txn in transactions if txn.get("profit_loss", 0) < 0)
+    if losses == 0:
+        return np.nan
+    return wins / losses
+
+
+def calculate_profit_factor(transactions):
+    """
+    Calculate the Profit Factor.
+
+    Args:
+        transactions (list): List of transaction dictionaries.
+
+    Returns:
+        float: Profit Factor.
+    """
+    gross_profit = sum(
+        txn["profit_loss"] for txn in transactions if txn.get("profit_loss", 0) > 0
+    )
+    gross_loss = -sum(
+        txn["profit_loss"] for txn in transactions if txn.get("profit_loss", 0) < 0
+    )
+    if gross_loss == 0:
+        return np.nan
+    return gross_profit / gross_loss
