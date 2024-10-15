@@ -14,6 +14,7 @@ import pandas as pd
 from datetime import datetime
 from software.data_processor import process_data
 from software.analysis import evaluate_performance
+from tqdm import tqdm
 from software.plot_draws import plot_drawdown, plot_equity_curve
 from software.utils import validate_data
 from .strategy import generate_signals
@@ -104,7 +105,10 @@ def run_back_test(
     """
     print(f"Running back tests for {ticker} from {start_date} to {end_date}...")
 
+    # Step 1: Fetch data with progress bar for loading market data
+    print("Preparing market data for backtest...")
     data = fetch_data(ticker, start_date, end_date, interval)
+    num_frames = len(data)
 
     if validate_data(data):
         processed_data = process_data(
@@ -116,6 +120,8 @@ def run_back_test(
             bbands_period=bbands_period,
             atr_period=atr_period,
         )
+
+        print("Running backtest...")
         signals = generate_signals(processed_data)
         transactions, equity_curve, dates = execute_trades(
             signals,
@@ -128,14 +134,32 @@ def run_back_test(
         performance_metrics = evaluate_performance(
             transactions, equity_curve, initial_cash
         )
-        plot_results(equity_curve, dates)
-        return build_backtest_report(
-            transactions, equity_curve, signals, performance_metrics
+        # plot_results(equity_curve, dates)
+
+        report = build_backtest_report(
+            transactions,
+            equity_curve,
+            signals,
+            performance_metrics,
+            start_date,
+            end_date,
+            num_frames,
         )
+        print("Backtest completed successfully.")
+        print(report)
+        return report
     return None
 
 
-def build_backtest_report(transactions, equity_curve, signals, performance_metrics):
+def build_backtest_report(
+    transactions,
+    equity_curve,
+    signals,
+    performance_metrics,
+    start_date,
+    end_date,
+    num_frames,
+):
     """
     Build a report with backtest results and performance metrics.
 
@@ -144,11 +168,20 @@ def build_backtest_report(transactions, equity_curve, signals, performance_metri
         equity_curve (list): List of equity values over time.
         signals (pd.DataFrame): DataFrame of trading signals.
         performance_metrics (dict): Performance metrics of the trading strategy.
+        start_date (str): Start date of the backtest.
+        end_date (str): End date of the backtest.
+        num_frames (int): Number of data frames (rows of data).
 
     Returns:
         dict: Back test results report.
     """
+    num_operations = len(transactions)
+
     return {
+        "start_date": start_date,
+        "end_date": end_date,
+        "num_frames": num_frames,
+        "num_operations": num_operations,
         "transactions": transactions,
         "equity_curve": equity_curve,
         "signals": signals,
@@ -172,8 +205,9 @@ def execute_trades(
     dates = []
     signals = signals.sort_index()
 
-    # Execute trades based on signals
-    for index, row in signals.iterrows():
+    for index, row in tqdm(
+        signals.iterrows(), total=len(signals), desc="Executing trades"
+    ):
         signal = row["Signal"]
         price = row["Close"]
         high_price = row["High"]

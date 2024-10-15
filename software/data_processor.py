@@ -171,6 +171,19 @@ def add_technical_indicators(
             data["BollingerB_Lower"] = bbands[f"BBL_{bbands_period}_2.0"]
             data["BollingerB_Upper"] = bbands[f"BBU_{bbands_period}_2.0"]
 
+        data = data.dropna(
+            subset=[
+                "SMA",
+                "EMA",
+                "RSI",
+                "ATR",
+                "MACD",
+                "MACD_Signal",
+                "BollingerB_Lower",
+                "BollingerB_Upper",
+            ]
+        )
+
         return data
 
     except Exception as e:

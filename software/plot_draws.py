@@ -108,12 +108,49 @@ def plot_bollinger_bands(data):
 def plot_ema_and_sma(data):
     plt.figure(figsize=(21, 7))
     plt.plot(data.index, data["Close"], label="Close Price")
-    plt.plot(
-        data.index, data["SMA_5"], label="5-Day SMA", color="green", linestyle="--"
-    )
+    plt.plot(data.index, data["SMA"], label="SMA", color="green", linestyle="--")
     plt.plot(data.index, data["EMA"], label="EMA", color="orange", linestyle="--")
     plt.title("Close Price with SMA and EMA", fontsize=16)
     plt.xlabel("Date")
     plt.ylabel("Price")
     plt.legend()
+    plt.show()
+
+
+def plot_signals(data, signals):
+    """
+    Plots the close prices and overlays buy/sell signals on the chart.
+
+    Args:
+        data (pd.DataFrame): DataFrame containing stock data with 'Close' price.
+        signals (pd.DataFrame): DataFrame containing the signals with 'Signal' values
+                                (1 for buy, -1 for sell, 0 for hold).
+    """
+    plt.figure(figsize=(14, 7))
+    plt.plot(data.index, data["Close"], label="Close Price", lw=1.5)
+    buy_signals = signals[signals["Signal"] == 1]
+    plt.plot(
+        buy_signals.index,
+        buy_signals["Close"],
+        "^",
+        markersize=10,
+        color="green",
+        lw=0,
+        label="Buy Signal",
+    )
+    sell_signals = signals[signals["Signal"] == -1]
+    plt.plot(
+        sell_signals.index,
+        sell_signals["Close"],
+        "v",
+        markersize=10,
+        color="red",
+        lw=0,
+        label="Sell Signal",
+    )
+    plt.title("Trading Signals on Close Price", fontsize=16)
+    plt.xlabel("Date", fontsize=12)
+    plt.ylabel("Price", fontsize=12)
+    plt.legend()
+    plt.grid(True)
     plt.show()
