@@ -17,9 +17,9 @@ def plot_equity_curve(equity_curve):
     """
     plt.figure(figsize=(14, 7))
     equity_curve.plot()
-    plt.title("Equity Curve")
-    plt.xlabel("Date")
-    plt.ylabel("Portfolio Value ($)")
+    plt.title("Equity Curve", fontsize=16)
+    plt.xlabel("Date", fontsize=14)
+    plt.ylabel("Portfolio Value ($)", fontsize=14)
     plt.grid(True)
     plt.show()
 
@@ -34,9 +34,9 @@ def plot_drawdown(equity_curve):
     drawdown = (equity_curve / equity_curve.cummax()) - 1
     plt.figure(figsize=(14, 7))
     drawdown.plot()
-    plt.title("Drawdown")
-    plt.xlabel("Date")
-    plt.ylabel("Drawdown (%)")
+    plt.title("Drawdown", fontsize=16)
+    plt.xlabel("Date", fontsize=14)
+    plt.ylabel("Drawdown (%)", fontsize=14)
     plt.grid(True)
     plt.show()
 
@@ -53,6 +53,7 @@ def plot_atr(data):
     plt.title("Average True Range (ATR)", fontsize=16)
     plt.xlabel("Date", fontsize=14)
     plt.ylabel("ATR Value", fontsize=14)
+    plt.grid(True)
     plt.legend()
     plt.show()
 
@@ -71,8 +72,9 @@ def plot_rsi(data):
         70, linestyle="--", alpha=0.5, color="green", label="Overbought Level (70)"
     )
     plt.title("RSI Indicator", fontsize=16)
-    plt.xlabel("Date")
-    plt.ylabel("RSI Value")
+    plt.xlabel("Date", fontsize=14)
+    plt.ylabel("RSI Value", fontsize=14)
+    plt.grid(True)
     plt.legend()
     plt.show()
 
@@ -101,6 +103,7 @@ def plot_bollinger_bands(data):
     plt.title("Bollinger Bands", fontsize=16)
     plt.xlabel("Date", fontsize=14)
     plt.ylabel("Price", fontsize=14)
+    plt.grid(True)
     plt.legend()
     plt.show()
 
@@ -111,46 +114,46 @@ def plot_ema_and_sma(data):
     plt.plot(data.index, data["SMA"], label="SMA", color="green", linestyle="--")
     plt.plot(data.index, data["EMA"], label="EMA", color="orange", linestyle="--")
     plt.title("Close Price with SMA and EMA", fontsize=16)
-    plt.xlabel("Date")
-    plt.ylabel("Price")
+    plt.xlabel("Date", fontsize=14)
+    plt.ylabel("Price", fontsize=14)
+    plt.grid(True)
     plt.legend()
     plt.show()
 
 
-def plot_signals(data, signals):
+def plot_signals(data):
     """
     Plots the close prices and overlays buy/sell signals on the chart.
 
     Args:
-        data (pd.DataFrame): DataFrame containing stock data with 'Close' price.
-        signals (pd.DataFrame): DataFrame containing the signals with 'Signal' values
-                                (1 for buy, -1 for sell, 0 for hold).
+        data (pd.DataFrame): DataFrame containing stock data with 'Close' prices and 'Signal' column.
     """
+    buy_short = data["Signal"] == -1
+    buy_long = data["Signal"] == 1
+
     plt.figure(figsize=(14, 7))
+    plt.title("Buy Signals", fontsize=16)
     plt.plot(data.index, data["Close"], label="Close Price", lw=1.5)
-    buy_signals = signals[signals["Signal"] == 1]
-    plt.plot(
-        buy_signals.index,
-        buy_signals["Close"],
-        "^",
-        markersize=10,
-        color="green",
-        lw=0,
-        label="Buy Signal",
-    )
-    sell_signals = signals[signals["Signal"] == -1]
-    plt.plot(
-        sell_signals.index,
-        sell_signals["Close"],
-        "v",
-        markersize=10,
-        color="red",
-        lw=0,
-        label="Sell Signal",
-    )
-    plt.title("Trading Signals on Close Price", fontsize=16)
-    plt.xlabel("Date", fontsize=12)
-    plt.ylabel("Price", fontsize=12)
+    if buy_short.any():
+        plt.plot(
+            data.index[buy_short],
+            data["Close"][buy_short],
+            "v",
+            markersize=8,
+            color="red",
+            label="Buy Short Signal",
+        )
+
+    if buy_long.any():
+        plt.plot(
+            data.index[buy_long],
+            data["Close"][buy_long],
+            "^",
+            markersize=8,
+            color="green",
+            label="Buy Long Signal",
+        )
+
     plt.legend()
     plt.grid(True)
     plt.show()

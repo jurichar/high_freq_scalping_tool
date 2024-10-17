@@ -15,7 +15,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 
-from software.utils import (
+from software.analysis import (
     apply_slippage,
     calculate_exit_prices,
     calculate_proceeds,
@@ -365,28 +365,30 @@ class TradingExecutor:
         self, signal, price, date, high_price, low_price, atr_stop_loss, atr_take_profit
     ):
         """
-        Executes a trading signal.
+        Execute trading signals by opening or closing positions.
+        This handles both Buy Long and Buy Short, and manages exits.
 
         Args:
-            signal (int): Trading signal.
-                1  - Enter Long
-                -1 - Enter Short
-                0  - Hold
+            signal (int): The trading signal (1 = Buy Long, -1 = Buy Short, 0 = Hold).
             price (float): Current price of the asset.
-            date (pd.Timestamp): Current date.
-            high_price (float): High price of the asset in this period.
-            low_price (float): Low price of the asset in this period.
-            atr_stop_loss (float): ATR-based stop-loss value.
-            atr_take_profit (float): ATR-based take-profit value.
+            date (pd.Timestamp): Current timestamp.
+            high_price (float): High price for the period.
+            low_price (float): Low price for the period.
+            atr_stop_loss (float): Stop-loss based on ATR.
+            atr_take_profit (float): Take-profit based on ATR.
         """
+        # Check if any positions need to be closed first
         self.check_positions(price, date, high_price, low_price)
 
+        # Open new positions based on signal (if no position is already open)
         if signal == 1 and not self.has_open_position("long"):
+            # Open Buy Long position
             self.open_position(
                 "long", price, date, atr_stop_loss / price, atr_take_profit / price
             )
 
         elif signal == -1 and not self.has_open_position("short"):
+            # Open Buy Short position
             self.open_position(
                 "short", price, date, atr_stop_loss / price, atr_take_profit / price
             )

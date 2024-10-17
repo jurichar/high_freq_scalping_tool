@@ -1,94 +1,131 @@
-"""
-strategy.py
-
-Module for implementing scalping trading strategies.
-
-Functions:
-- generate_signals: Generates buy/sell signals based on a scalping strategy.
-"""
-
+import logging
 import numpy as np
 import pandas as pd
 
 
-def generate_signals(data, ema_short=5, ema_long=10, rsi_period=7):
+def generate_buy_long_signals(data):
     """
-    Generate buy/sell signals based on a scalping strategy.
-
-    The strategy uses short-term EMA crossovers, RSI levels,
-    Bollinger Bands, and ATR for volatility-adjusted stop-losses.
+    Generates buy signals for long positions based on precomputed EMA crossover, RSI, and Bollinger Bands.
 
     Args:
-        data (pd.DataFrame): The stock data with technical indicators.
+        data (pd.DataFrame): Stock data with precomputed technical indicators.
 
     Returns:
-        pd.DataFrame: DataFrame with 'Signal' and 'Close' columns.
+        pd.Series: Series with buy signals for long positions.
+
+    Example:
+        >>> data = pd.DataFrame({
+        ...     'Close': [10, 20, 30, 40, 50],
+        ...     'SMA': [15, 25, 35, 45, 55],
+        ...     'EMA': [12, 22, 32, 42, 52],
+        ...     'RSI': [20, 30, 40, 50, 60],
+        ...     'BollingerB_Lower': [10, 20, 30, 40, 50],
+        ...     'BollingerB_Upper': [20, 30, 40, 50, 60],
+        ... })
+        >>> generate_buy_long_signals(data)
+        [False, False, False, False, False]
+
+        >>> data = pd.DataFrame({
+        ...     'Close': [10, 15, 20, 25, 30],
+        ...     'SMA': [20, 25, 30, 35, 40],
+        ...     'EMA': [18, 22, 28, 32, 38],
+        ...     'RSI': [25, 28, 35, 40, 42],
+        ...     'BollingerB_Lower': [12, 18, 25, 30, 35],
+        ...     'BollingerB_Upper': [22, 28, 35, 40, 45],
+        ... })
+        >>> generate_buy_long_signals(data)
+        [True, True, False, False, False]
     """
 
-    # Ensure data is sorted by date
-    data = data.sort_index()
+    ema_signal = np.where(data["EMA"] > data["SMA"], 1, 0)
+    rsi_signal = np.where(data["RSI"] < 30, 1, 0)
+    bb_signal = np.where(data["Close"] < data["BollingerB_Lower"], 1, 0)
 
-    # Short-term EMAs
-    data[f"EMA_{ema_short}"] = data["Close"].ewm(span=ema_short, adjust=False).mean()
-    data[f"EMA_{ema_long}"] = data["Close"].ewm(span=ema_long, adjust=False).mean()
+    final_signal = (ema_signal + rsi_signal + bb_signal) > 1
+    return final_signal.tolist()
 
-    # EMA Crossover Signal
-    data["EMA_Signal"] = 0
-    data["EMA_Signal"] = np.where(
-        data[f"EMA_{ema_short}"] > data[f"EMA_{ema_long}"], 1, -1
-    )
 
-    # Short-term RSI
-    data["RSI_Short"] = data["RSI"].rolling(window=rsi_period).mean()
+def generate_buy_short_signals(data):
+    """
+    Generates buy signals for short positions based on precomputed EMA crossover, RSI, and Bollinger Bands.
 
-    # RSI Signal
-    data["RSI_Signal"] = 0
-    data["RSI_Signal"] = np.where(
-        data["RSI_Short"] < 30, 1, np.where(data["RSI_Short"] > 70, -1, 0)
-    )
+    Args:
+        data (pd.DataFrame): Stock data with precomputed technical indicators.
 
-    # Bollinger Bands Signal
-    data["BB_Signal"] = 0
-    data["BB_Signal"] = np.where(
-        data["Close"] < data["BollingerB_Lower"],
-        1,
-        np.where(data["Close"] > data["BollingerB_Upper"], -1, 0),
-    )
+    Returns:
+        pd.Series: Series with buy signals for short positions.
 
-    # MACD Signal
-    data["MACD_Signal_Strength"] = np.where(
-        (data["MACD"] > data["MACD_Signal"]),
-        1,
-        np.where((data["MACD"] < data["MACD_Signal"]), -1, 0),
-    )
+    Example:
+        >>> data = pd.DataFrame({
+        ...     'Close': [10, 20, 30, 40, 50],
+        ...     'SMA': [15, 25, 35, 45, 55],
+        ...     'EMA': [12, 22, 32, 42, 52],
+        ...     'RSI': [20, 30, 40, 50, 60],
+        ...     'BollingerB_Lower': [10, 20, 30, 40, 50],
+        ...     'BollingerB_Upper': [20, 30, 40, 50, 60],
+        ... })
+        >>> generate_buy_short_signals(data)
+        [False, False, False, False, False]
 
-    # Assign weights to each signal
-    weights = {
-        "EMA_Signal": 2,
-        "RSI_Signal": 1,
-        "BB_Signal": 1,
-        "MACD_Signal_Strength": 1,
-    }
+        >>> data = pd.DataFrame({
+        ...     'Close': [55, 60, 65, 70, 75],
+        ...     'SMA': [50, 55, 60, 65, 70],
+        ...     'EMA': [52, 57, 62, 67, 72],
+        ...     'RSI': [75, 72, 71, 68, 67],
+        ...     'BollingerB_Lower': [45, 50, 55, 60, 65],
+        ...     'BollingerB_Upper': [55, 60, 65, 70, 75],
+        ... })
+        >>> generate_buy_short_signals(data)
+        [True, True, True, False, False]
 
-    # Vectorize signal score calculation using np.dot for efficiency
-    signal_columns = ["EMA_Signal", "RSI_Signal", "BB_Signal", "MACD_Signal_Strength"]
-    signal_weights = np.array([weights[col] for col in signal_columns])
-    data["Signal_Score"] = np.dot(data[signal_columns].values, signal_weights)
+    """
+    ema_signal = np.where(data["EMA"] < data["SMA"], 1, 0)
+    rsi_signal = np.where(data["RSI"] > 70, 1, 0)
+    bb_signal = np.where(data["Close"] >= data["BollingerB_Upper"], 1, 0)
 
-    # Define final signal based on threshold
-    data["Signal"] = np.where(
-        data["Signal_Score"] >= 3, 1, np.where(data["Signal_Score"] <= -3, -1, 0)
-    )
+    final_signal = (ema_signal + rsi_signal + bb_signal) > 1
 
-    # Filter duplicate signals
-    data["Signal"] = data["Signal"].diff().fillna(data["Signal"])
+    return final_signal.tolist()
 
-    # Adjust stop-loss and take-profit using ATR
-    data["ATR_Stop_Loss"] = data["ATR"] * 1.5
-    data["ATR_Take_Profit"] = data["ATR"] * 3
 
-    data = data.dropna(
-        subset=["ATR_Stop_Loss", "ATR_Take_Profit", "MACD", "MACD_Signal"]
-    )
+def generate_signals(data):
+    """
+    Generate buy/sell signals based on precomputed technical indicators.
 
-    return data[["Signal", "Close", "High", "Low", "ATR_Stop_Loss", "ATR_Take_Profit"]]
+    Args:
+        data (pd.DataFrame): Stock data with precomputed technical indicators.
+
+    Returns:
+        pd.DataFrame: DataFrame with buy/sell signals.
+
+    Example:
+        >>> data = pd.DataFrame({
+        ...     'Close': [10, 20, 30, 40, 50],
+        ...     'SMA': [15, 25, 35, 45, 55],
+        ...     'EMA': [12, 22, 32, 42, 52],
+        ...     'RSI': [20, 30, 40, 50, 60],
+        ...     'BollingerB_Lower': [10, 20, 30, 40, 50],
+        ...     'BollingerB_Upper': [20, 30, 40, 50, 60],
+        ... })
+        >>> generate_signals(data).Signal.tolist()
+        [0, 0, 0, 0, 0]
+
+        >>> data = pd.DataFrame({
+        ...     'Close': [55, 60, 65, 70, 75, 10, 15, 20, 25, 30],
+        ...     'SMA': [50, 55, 60, 65, 70, 20, 25, 30, 35, 40],
+        ...     'EMA': [52, 57, 62, 67, 72, 18, 22, 28, 32, 38],
+        ...     'RSI': [75, 72, 71, 68, 67, 25, 28, 35, 40, 42],
+        ...     'BollingerB_Lower': [45, 50, 55, 60, 65, 12, 18, 25, 30, 35],
+        ...     'BollingerB_Upper': [55, 60, 65, 70, 75, 22, 28, 35, 40, 45],
+        ... })
+        >>> generate_signals(data).Signal.tolist()
+        [-1, -1, -1, 0, 0, 1, 1, 0, 0, 0]
+
+    """
+    buy_short_signal = generate_buy_short_signals(data)
+    buy_long_signal = generate_buy_long_signals(data)
+
+    data["Signal"] = np.where(buy_short_signal, -1, 0)
+    data["Signal"] = np.where(buy_long_signal, 1, data["Signal"])
+
+    return data
