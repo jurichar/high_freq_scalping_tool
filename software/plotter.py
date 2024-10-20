@@ -1,5 +1,5 @@
 """
-plot_draws.py
+plotter.py
 
 
 """
@@ -157,3 +157,16 @@ def plot_signals(data):
     plt.legend()
     plt.grid(True)
     plt.show()
+
+
+def plot_results(equity_curve, dates):
+    """
+    Plot the equity curve and drawdown of the back test results.
+
+    Args:
+        equity_curve (list): List of equity values over time.
+        dates (list): List of dates corresponding to the equity values.
+    """
+    equity_series = pd.Series(equity_curve, index=dates)
+    plot_equity_curve(equity_series)
+    plot_drawdown(equity_series)

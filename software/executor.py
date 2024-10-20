@@ -13,9 +13,8 @@ Classes:
 
 import logging
 import pandas as pd
-from datetime import datetime
 
-from software.analysis import (
+from software.trade_utils import (
     apply_slippage,
     calculate_exit_prices,
     calculate_proceeds,
