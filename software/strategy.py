@@ -148,3 +148,17 @@ class Strategy:
         data["Signal"] = np.where(buy_long_signal, 1, data["Signal"])
 
         return data
+
+    def generate_sell_signals(self, data):
+        """
+        Generate sell signals based on precomputed technical indicators.
+
+        Args:
+            data (pd.DataFrame): Stock data with precomputed technical indicators.
+
+        Returns:
+            pd.DataFrame: DataFrame with sell signals.
+
+        Example:
+        """
+        pass
