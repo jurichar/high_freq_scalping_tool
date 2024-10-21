@@ -17,7 +17,7 @@ from software.data_collector import get_data_for_period
 from software.executor import TradingExecutor
 
 
-def fetch_data(ticker, start_date, end_date, interval="1d"):
+def fetch_clean_data(ticker, start_date, end_date, interval="1d"):
     """
     Fetch historical data for a given stock ticker and date range.
 
@@ -45,6 +45,7 @@ def fetch_data(ticker, start_date, end_date, interval="1d"):
     logging.info(
         f"Data for {ticker} from {start_date} to {end_date} fetched successfully."
     )
+
     return data
 
 

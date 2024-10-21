@@ -137,12 +137,22 @@ def add_technical_indicators(
         RuntimeError: For unexpected errors.
 
     Tests:
-        >>> data = pd.DataFrame({"Close": [100, 101, 102, 103, 104],"High": [105, 106, 107, 108, 109],"Low": [95, 96, 97, 98, 99]})
+        >>> data = pd.DataFrame({
+        ...    "Close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
+        ...    "High": [105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138],
+        ...    "Low": [95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128],
+        ... })
         >>> data_with_indicators = add_technical_indicators(data)
         >>> 'SMA' in data_with_indicators.columns
         True
         >>> 'RSI' in data_with_indicators.columns
         True
+        >>> 'MACD' in data_with_indicators.columns
+        True
+        >>> pd.isna(data_with_indicators.iloc[3]['SMA'])
+        True
+        >>> pd.isna(data_with_indicators.iloc[4]['SMA'])
+        False
     """
     try:
         if not isinstance(data, pd.DataFrame):
@@ -161,6 +171,7 @@ def add_technical_indicators(
         )
 
         macd = ta.macd(data["Close"], fast=12, slow=26, signal=9)
+
         if macd is not None:
             data["MACD"] = macd["MACD_12_26_9"]
             data["MACD_Signal"] = macd["MACDs_12_26_9"]
@@ -170,20 +181,6 @@ def add_technical_indicators(
         if bbands is not None:
             data["BollingerB_Lower"] = bbands[f"BBL_{bbands_period}_2.0"]
             data["BollingerB_Upper"] = bbands[f"BBU_{bbands_period}_2.0"]
-
-        data = data.dropna(
-            subset=[
-                "SMA",
-                "EMA",
-                "RSI",
-                "ATR",
-                "MACD",
-                "MACD_Signal",
-                "BollingerB_Lower",
-                "BollingerB_Upper",
-            ]
-        )
-
         return data
 
     except Exception as e:
@@ -294,15 +291,47 @@ def process_data(
         RuntimeError: For any unexpected errors during processing.
 
     Tests:
-        >>> raw_data = pd.DataFrame({"Close": [100, 101, 102], "High": [105, 106, 107], "Low": [95, 96, 97]})
-        >>> processed_data = process_data(raw_data, "MSFT", "3mo")
-        >>> 'SMA_5' in processed_data.columns
+        >>> data = pd.DataFrame({
+        ...    "Close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
+        ...    "High": [105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138],
+        ...    "Low": [95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128],
+        ... })
+        >>> processed_data = process_data(data, "MSFT", "3mo")
+        >>> 'SMA' in processed_data.columns
         True
+        >>> 'RSI' in processed_data.columns
+        True
+        >>> 'MACD' in processed_data.columns
+        True
+        >>> 'MACD_Signal' in processed_data.columns
+        True
+        >>> 'MACD_Histogram' in processed_data.columns
+        True
+        >>> pd.isna(processed_data.iloc[0]['MACD_Histogram'])
+        False
+        >>> 'BollingerB_Lower' in processed_data.columns
+        True
+        >>> 'BollingerB_Upper' in processed_data.columns
+        True
+        >>> pd.isna(processed_data.iloc[0]['MACD_Histogram'])
+        False
     """
     try:
         data = clean_data(data)
         data = add_technical_indicators(
             data, sma_period, ema_period, rsi_period, bbands_period, atr_period
+        )
+        data = data.dropna(
+            subset=[
+                "SMA",
+                "EMA",
+                "RSI",
+                "ATR",
+                "MACD",
+                "MACD_Signal",
+                "BollingerB_Lower",
+                "BollingerB_Upper",
+            ]
         )
         # data = normalize_data(data)  # Uncomment to normalize the data
         save_processed_data(data, ticker, period)

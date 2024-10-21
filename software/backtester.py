@@ -54,17 +54,15 @@ def run_back_test(
     data = fetch_data(ticker, start_date, end_date, interval)
 
     if validate_data(data):
+        print("Processing data...")
         processed_data = process_data(
-            data=data,
-            ticker=ticker,
+            data,
             sma_period=sma_period,
             ema_period=ema_period,
             rsi_period=rsi_period,
             bbands_period=bbands_period,
             atr_period=atr_period,
         )
-
-        print("Running backtest...")
 
         print("Generating buy signals...")
         strategy = Strategy(
