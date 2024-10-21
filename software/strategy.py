@@ -107,9 +107,9 @@ class Strategy:
 
         return final_signal.tolist()
 
-    def generate_signals(self, data):
+    def generate_buy_signals(self, data):
         """
-        Generate buy/sell signals based on precomputed technical indicators.
+        Generate buy signals based on precomputed technical indicators.
 
         Args:
             data (pd.DataFrame): Stock data with precomputed technical indicators.

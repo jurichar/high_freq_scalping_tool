@@ -2,10 +2,11 @@
 backtester.py
 """
 
+from software.analysis import evaluate_performance
 from software.data_processor import process_data
 
-# from software.tasks import execute_trades
-from software.tasks import fetch_data
+from software.plotter import plot_results
+from software.tasks import execute_trades, fetch_data
 from software.utils import validate_data
 from software.strategy import Strategy
 
@@ -49,10 +50,8 @@ def run_back_test(
     """
     print(f"Running back tests for {ticker} from {start_date} to {end_date}...")
 
-    # Step 1: Fetch data with progress bar for loading market data
     print("Preparing market data for backtest...")
     data = fetch_data(ticker, start_date, end_date, interval)
-    # num_frames = len(data)
 
     if validate_data(data):
         processed_data = process_data(
@@ -66,43 +65,45 @@ def run_back_test(
         )
 
         print("Running backtest...")
+
+        print("Generating buy signals...")
         strategy = Strategy(
             ema_sma_threshold=0,
             rsi_long_threshold=30,
             rsi_short_threshold=70,
             bb_threshold=0,
         )
-        data_with_signals = strategy.generate_signals(processed_data)
+        data_with_signals = strategy.generate_buy_signals(processed_data)
 
-        print("Executing trades...: ", data_with_signals)
-
-        # print("Executing trades...")
-        # transactions, equity_curve, dates = execute_trades(
-        #     data=data_with_signals,
-        #     initial_cash=initial_cash,
-        #     transaction_cost=transaction_cost,
-        #     leverage=leverage,
-        #     slippage_pct=slippage_pct,
-        #     risk_per_trade=risk_per_trade,
-        # )
+        print("Executing trades...")
+        transactions, equity_curve, dates = execute_trades(
+            data=data_with_signals,
+            initial_cash=initial_cash,
+            transaction_cost=transaction_cost,
+            leverage=leverage,
+            slippage_pct=slippage_pct,
+            risk_per_trade=risk_per_trade,
+        )
 
         print("Evaluating performance...")
-        # performance_metrics = evaluate_performance(
-        #     transactions, equity_curve, initial_cash
-        # )
-        # plot_results(equity_curve, dates)
+        performance_metrics = evaluate_performance(
+            transactions, equity_curve, initial_cash
+        )
 
-        # print("Building backtest report...")
-        # report = build_backtest_report(
-        #     transactions,
-        #     equity_curve,
-        #     data_with_signals,
-        #     performance_metrics,
-        #     start_date,
-        #     end_date,
-        #     num_frames,
-        # )
+        plot_results(equity_curve, dates)
+
+        final_portfolio_value = equity_curve[-1]
+        total_profit = final_portfolio_value - initial_cash
+        print(f"Total Profit: ${total_profit:.2f}")
+
         print("Backtest completed successfully.")
-        # print(report)
-        # return report
-    return None
+        return {
+            "transactions": transactions,
+            "equity_curve": equity_curve,
+            "dates": dates,
+            "performance_metrics": performance_metrics,
+            "signals": data_with_signals,
+        }
+    else:
+        print("Data validation failed.")
+        return None

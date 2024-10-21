@@ -101,8 +101,6 @@ def execute_trades(
     equity_curve = []
     dates = []
 
-    print("Executing trades with this : ", data)
-
     for index, row in tqdm(data.iterrows(), total=len(data), desc="Executing trades"):
         signal = row["Signal"]
         price = row["Close"]
@@ -110,7 +108,12 @@ def execute_trades(
         low_price = row["Low"]
         date = index
 
-        executor.execute_signal(signal, price, date, high_price, low_price)
+        atr_stop_loss = row["ATR"] * 2
+        atr_take_profit = row["ATR"] * 4
+
+        executor.execute_signal(
+            signal, price, date, high_price, low_price, atr_stop_loss, atr_take_profit
+        )
 
         if executor.history and (
             not transactions or executor.history[-1] != transactions[-1]
