@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 import pandas as pd
 
@@ -27,6 +26,7 @@ class Strategy:
             pd.Series: Series with buy signals for long positions.
 
         Example:
+            >>> strategy = Strategy()
             >>> data = pd.DataFrame({
             ...     'Close': [10, 20, 30, 40, 50],
             ...     'SMA': [15, 25, 35, 45, 55],
@@ -35,7 +35,7 @@ class Strategy:
             ...     'BollingerB_Lower': [10, 20, 30, 40, 50],
             ...     'BollingerB_Upper': [20, 30, 40, 50, 60],
             ... })
-            >>> generate_buy_long_signals(data)
+            >>> strategy.generate_buy_long_signals(data=data)
             [False, False, False, False, False]
 
             >>> data = pd.DataFrame({
@@ -46,7 +46,7 @@ class Strategy:
             ...     'BollingerB_Lower': [12, 18, 25, 30, 35],
             ...     'BollingerB_Upper': [22, 28, 35, 40, 45],
             ... })
-            >>> generate_buy_long_signals(data)
+            >>> strategy.generate_buy_long_signals(data=data)
             [True, True, False, False, False]
         """
 
@@ -72,6 +72,7 @@ class Strategy:
             pd.Series: Series with buy signals for short positions.
 
         Example:
+            >>> strategy = Strategy()
             >>> data = pd.DataFrame({
             ...     'Close': [10, 20, 30, 40, 50],
             ...     'SMA': [15, 25, 35, 45, 55],
@@ -80,7 +81,7 @@ class Strategy:
             ...     'BollingerB_Lower': [10, 20, 30, 40, 50],
             ...     'BollingerB_Upper': [20, 30, 40, 50, 60],
             ... })
-            >>> generate_buy_short_signals(data)
+            >>> strategy.generate_buy_short_signals(data)
             [False, False, False, False, False]
 
             >>> data = pd.DataFrame({
@@ -91,7 +92,7 @@ class Strategy:
             ...     'BollingerB_Lower': [45, 50, 55, 60, 65],
             ...     'BollingerB_Upper': [55, 60, 65, 70, 75],
             ... })
-            >>> generate_buy_short_signals(data)
+            >>> strategy.generate_buy_short_signals(data)
             [True, True, True, False, False]
 
         """
@@ -118,6 +119,7 @@ class Strategy:
             pd.DataFrame: DataFrame with buy/sell signals.
 
         Example:
+            >>> strategy = Strategy()
             >>> data = pd.DataFrame({
             ...     'Close': [10, 20, 30, 40, 50],
             ...     'SMA': [15, 25, 35, 45, 55],
@@ -126,7 +128,7 @@ class Strategy:
             ...     'BollingerB_Lower': [10, 20, 30, 40, 50],
             ...     'BollingerB_Upper': [20, 30, 40, 50, 60],
             ... })
-            >>> generate_signals(data).Signal.tolist()
+            >>> strategy.generate_buy_signals(data).Signal.tolist()
             [0, 0, 0, 0, 0]
 
             >>> data = pd.DataFrame({
@@ -137,28 +139,15 @@ class Strategy:
             ...     'BollingerB_Lower': [45, 50, 55, 60, 65, 12, 18, 25, 30, 35],
             ...     'BollingerB_Upper': [55, 60, 65, 70, 75, 22, 28, 35, 40, 45],
             ... })
-            >>> generate_signals(data).Signal.tolist()
+            >>> strategy.generate_buy_signals(data).Signal.tolist()
             [-1, -1, -1, 0, 0, 1, 1, 0, 0, 0]
 
         """
         buy_short_signal = self.generate_buy_short_signals(data)
         buy_long_signal = self.generate_buy_long_signals(data)
 
-        data["Signal"] = np.where(buy_short_signal, -1, 0)
-        data["Signal"] = np.where(buy_long_signal, 1, data["Signal"])
+        final_signal = np.where(buy_short_signal, -1, 0)
+        final_signal = np.where(buy_long_signal, 1, final_signal)
 
+        data["Signal"] = final_signal
         return data
-
-    def generate_sell_signals(self, data):
-        """
-        Generate sell signals based on precomputed technical indicators.
-
-        Args:
-            data (pd.DataFrame): Stock data with precomputed technical indicators.
-
-        Returns:
-            pd.DataFrame: DataFrame with sell signals.
-
-        Example:
-        """
-        pass

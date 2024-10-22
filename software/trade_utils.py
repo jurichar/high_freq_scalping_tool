@@ -5,7 +5,7 @@ trade_utils.py
 import logging
 
 
-def calculate_size(price, equity, stop_loss_pct, risk_per_trade):
+def calculate_size(price, equity, risk_per_trade):
     """
     Calculate the position size based on the risk per trade and stop-loss percentage.
     The position size is the number of units of an asset to buy or sell.
@@ -20,19 +20,11 @@ def calculate_size(price, equity, stop_loss_pct, risk_per_trade):
         float: Position size.
 
     Examples:
-        >>> calculate_size(price=100, equity=10000, stop_loss_pct=0.02, risk_per_trade=0.01)
+        >>> calculate_size(price=100, equity=10000, risk_per_trade=0.01)
         50.0
     """
-    atr_stop_loss_dollar = stop_loss_pct * price
     risk_amount = equity * risk_per_trade
-
-    if atr_stop_loss_dollar > risk_amount:
-        logging.warning(
-            "Stop-loss dollar value exceeds risk amount. Reducing position size."
-        )
-        return equity / price
-
-    return risk_amount / atr_stop_loss_dollar
+    return risk_amount / price
 
 
 def apply_slippage(price, position_type, slippage_pct):
@@ -115,7 +107,9 @@ def calculate_proceeds(adjusted_price, amount, transaction_cost):
 
     Examples:
         >>> calculate_proceeds(amount=100, adjusted_price=100, transaction_cost=0.01)
-        999.0
+        9900.0
     """
-
-    return adjusted_price * amount * (1 - transaction_cost)
+    total_value = adjusted_price * amount
+    total_cost = total_value * transaction_cost
+    proceeds = total_value - total_cost
+    return proceeds

@@ -98,6 +98,8 @@ def execute_trades(
         risk_per_trade=risk_per_trade,
     )
 
+    # data["Signal"] = [1, -1, 0, 0, 0, 0, 0, 0]
+
     transactions = []
     equity_curve = []
     dates = []
@@ -108,6 +110,7 @@ def execute_trades(
         high_price = row["High"]
         low_price = row["Low"]
         date = index
+        # eg: buy long, at 100$ with hp 105$ and lp 95$ at 19-01-2023
 
         atr_stop_loss = row["ATR"] * 2
         atr_take_profit = row["ATR"] * 4

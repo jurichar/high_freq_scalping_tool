@@ -16,7 +16,6 @@ import pandas as pd
 
 from software.trade_utils import (
     apply_slippage,
-    calculate_exit_prices,
     calculate_proceeds,
     calculate_size,
 )
@@ -30,8 +29,6 @@ class Position:
         amount,
         entry_price,
         entry_date,
-        stop_loss=None,
-        take_profit=None,
     ):
         """
         Initializes a position.
@@ -48,66 +45,10 @@ class Position:
         self.amount = amount
         self.entry_price = entry_price
         self.entry_date = entry_date
-        self.stop_loss = stop_loss
-        self.take_profit = take_profit
         self.closed = False
         self.exit_price = None
         self.exit_date = None
         self.pnl = 0.0
-
-    def check_exit_conditions(self, high_price: float, low_price: float) -> bool:
-        """
-        Checks if the stop-loss or take-profit conditions are met.
-
-        Args:
-            current_price (float): Current price of the asset.
-            high_price (float): High price of the asset in this period.
-            low_price (float): Low price of the asset in this period.
-
-        Returns:
-            bool: True if the position should be closed, False otherwise.
-
-        Example:
-            >>> pos = Position(position_type='short', amount=5, entry_price=150, entry_date=pd.Timestamp('2023-01-01'))
-            # short: 5 * (150) = 750
-            >>> pos.check_exit_conditions(high_price=140, low_price=160)
-            False
-
-            >>> pos = Position(position_type='long', amount=10, entry_price=100, entry_date=pd.Timestamp('2023-01-01'))
-            >>> pos.take_profit = 110
-            >>> pos.check_exit_conditions(high_price=120, low_price=90)
-            True
-
-            >>> pos = Position(position_type='short', amount=5, entry_price=150, entry_date=pd.Timestamp('2023-01-01'))
-            >>> pos.stop_loss = 140
-            >>> pos.check_exit_conditions(high_price=140, low_price=160)
-            True
-        """
-        if self.closed:
-            return False
-
-        epsilon = 1e-6
-
-        # Long position
-        if self.type == "long":
-            # Check if stop-loss conditions are met
-            if self.stop_loss is not None and low_price <= self.stop_loss + epsilon:
-                return True
-            # Check if take-profit conditions are met
-            if (
-                self.take_profit is not None
-                and high_price >= self.take_profit - epsilon
-            ):
-                return True
-        # Short position
-        elif self.type == "short":
-            # Check if stop-loss conditions are met
-            if self.stop_loss is not None and high_price >= self.stop_loss - epsilon:
-                return True
-            # Check if take-profit conditions are met
-            if self.take_profit is not None and low_price <= self.take_profit + epsilon:
-                return True
-        return False
 
     def close(self, exit_price: float, exit_date: pd.Timestamp) -> None:
         """
@@ -176,6 +117,8 @@ class TradingExecutor:
     def calculate_position_size(self, price: float, stop_loss_pct: float) -> float:
         """
         Calculates the optimal position size based on available risk and cash.
+        If I have $10000 and I want to risk 1% of my equity on a trade of a stock priced at $100,
+        I can buy 50 shares with a stop-loss of 5%.
 
         Args:
             price (float): Current price of the asset.
@@ -183,12 +126,17 @@ class TradingExecutor:
 
         Returns:
             float: The maximum position size.
+
+        Example:
+            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor.calculate_position_size(100, 0.05)
+            50.0
         """
         return calculate_size(
-            price,
-            self.get_total_portfolio_value(price),
-            stop_loss_pct,
-            self.risk_per_trade,
+            price=price,
+            equity=self.get_total_portfolio_value(price),
+            stop_loss_pct=stop_loss_pct,
+            risk_per_trade=self.risk_per_trade,
         )
 
     def open_position(
@@ -197,7 +145,6 @@ class TradingExecutor:
         price: float,
         date: pd.Timestamp,
         stop_loss_pct: float,
-        take_profit_pct: float,
     ) -> None:
         """
         Opens a long or short position with dynamic sizing based on risk.
@@ -207,34 +154,30 @@ class TradingExecutor:
             price (float): Asset price.
             date (pd.Timestamp): Transaction date.
             stop_loss_pct (float): Stop-loss percentage.
-            take_profit_pct (float): Take-profit percentage.
 
         Example:
             >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> executor.open_position(position_type='long', price=100, date=pd.Timestamp('2023-01-01'), stop_loss_pct=0.05)
             >>> len(executor.positions) == 1
             True
-            >>> executor.cash < 10000
-            True
-            >>> executor.open_position('short', 10, 100, pd.Timestamp('2023-01-01'))
+            >>> executor.cash
+
+            >>> executor.open_position('short', 100, pd.Timestamp('2023-01-01'), 0.05)
             >>> len(executor.positions) == 2
             True
 
             >>> executor = TradingExecutor(initial_cash=100)
-            >>> executor.open_position('long', 10, 100, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> executor.open_position('long', 100, pd.Timestamp('2023-01-01'), 0.05)
             >>> len(executor.positions) == 0
             True
         """
 
         try:
             position_size = self.calculate_position_size(price, stop_loss_pct)
-
-            stop_loss, take_profit, adjusted_price = calculate_exit_prices(
-                position_type, price, stop_loss_pct, take_profit_pct, self.slippage_pct
-            )
-
+            adjusted_price = apply_slippage(price, position_type, self.slippage_pct)
             total_cost = adjusted_price * position_size * (1 + self.transaction_cost)
             margin_required = total_cost / self.leverage
+
             logging.info(f"Total Cost: {total_cost}")
             logging.info(f"Margin Required: {margin_required}")
 
@@ -260,8 +203,6 @@ class TradingExecutor:
                 amount=position_size,
                 entry_price=price,
                 entry_date=date,
-                stop_loss=stop_loss,
-                take_profit=take_profit,
             )
             self.positions.append(position)
 
@@ -296,7 +237,7 @@ class TradingExecutor:
 
         Example:
             >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05)
             >>> len(executor.positions) == 1
             True
             >>> position = executor.positions[0]
@@ -325,29 +266,6 @@ class TradingExecutor:
         except Exception as e:
             logging.error(f"Error closing position: {e}")
 
-    def check_positions(self, price, date, high_price, low_price):
-        """
-        Checks positions to determine if stop-loss or take-profit conditions are met.
-
-        Args:
-            price (float): Current price of the asset.
-            date (pd.Timestamp): Current date.
-
-        Example:
-            >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05, 0.1)
-            >>> position = executor.positions[0]
-            >>> executor.check_positions(120, pd.Timestamp('2023-02-01'), 120, 90)
-            >>> len(executor.positions) == 0
-            True
-        """
-        for position in self.positions[:]:
-            if position.check_exit_conditions(high_price, low_price):
-                logging.info(
-                    f"Exit conditions met for {position.type} position at {price}."
-                )
-                self.close_position(position, price, date)
-
     def has_open_position(self, position_type: str) -> bool:
         """
         Checks if there is an open position of the given type.
@@ -360,37 +278,39 @@ class TradingExecutor:
         """
         return any(p.type == position_type and not p.closed for p in self.positions)
 
-    def execute_signal(
-        self, signal, price, date, high_price, low_price, atr_stop_loss, atr_take_profit
-    ):
+    def execute_signal(self, signal, price, date, atr_stop_loss):
         """
         Execute trading signals by opening or closing positions.
         This handles both Buy Long and Buy Short, and manages exits.
 
         Args:
-            signal (int): The trading signal (1 = Buy Long, -1 = Buy Short, 0 = Hold).
+            signal (int): Trading signal (1 for Buy Long, -1 for Buy Short, 2 for Exit Long, -2 for Exit Short).
             price (float): Current price of the asset.
             date (pd.Timestamp): Current timestamp.
             high_price (float): High price for the period.
             low_price (float): Low price for the period.
             atr_stop_loss (float): Stop-loss based on ATR.
             atr_take_profit (float): Take-profit based on ATR.
+
+        Example:
+            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor.execute_signal(1, 100, pd.Timestamp('2023-01-01'), 0.05)
         """
-        # Check if any positions need to be closed first
-        self.check_positions(price, date, high_price, low_price)
 
-        # Open new positions based on signal (if no position is already open)
-        if signal == 1 and not self.has_open_position("long"):
-            # Open Buy Long position
-            self.open_position(
-                "long", price, date, atr_stop_loss / price, atr_take_profit / price
-            )
-
-        elif signal == -1 and not self.has_open_position("short"):
-            # Open Buy Short position
-            self.open_position(
-                "short", price, date, atr_stop_loss / price, atr_take_profit / price
-            )
+        if signal == 1:  # Buy Long signal
+            if not self.has_open_position("long"):
+                self.open_position("long", price, date, atr_stop_loss / price)
+        elif signal == -1:  # Buy Short signal
+            if not self.has_open_position("short"):
+                self.open_position("short", price, date, atr_stop_loss / price)
+        elif signal == 2:  # Close Long signal
+            for position in self.positions[:]:
+                if position.type == "long" and not position.closed:
+                    self.close_position(position, price, date)
+        elif signal == -2:  # Close Short signal
+            for position in self.positions[:]:
+                if position.type == "short" and not position.closed:
+                    self.close_position(position, price, date)
 
     def get_total_portfolio_value(self, current_price):
         """
@@ -406,7 +326,7 @@ class TradingExecutor:
             >>> executor = TradingExecutor(initial_cash=10000)
             >>> executor.get_total_portfolio_value(110)
             10000.0
-            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05, 0.1)
+            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05)
             >>> executor.get_total_portfolio_value(110)
             9099.0
         """

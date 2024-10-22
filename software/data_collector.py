@@ -9,6 +9,7 @@ This module provides functions to retrieve historical data for a specific stock 
 import yfinance as yf
 import pandas as pd
 import os
+import logging
 
 
 def get_stock_data(
@@ -45,9 +46,9 @@ def get_stock_data(
             os.makedirs(output_dir, exist_ok=True)
             csv_file = os.path.join(output_dir, f"{ticker}_{period}.csv")
             data.to_csv(csv_file)
-            print(f"Data saved to {csv_file}")
+            logging.log(f"Data saved to {csv_file}")
     except Exception as e:
-        print(f"Error in fetching data: {e}")
+        logging.error(f"Error in fetching data: {e}")
         data = pd.DataFrame()
     return data
 
@@ -94,9 +95,9 @@ def get_data_for_period(
                 f"{ticker}_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}.csv",
             )
             data.to_csv(csv_file)
-            print(f"Data saved to {csv_file}")
+            logging.log(f"Data saved to {csv_file}")
     except Exception as e:
-        print(f"Error in fetching data: {e}")
+        logging.error(f"Error in fetching data: {e}")
         data = pd.DataFrame()
     return data
 
