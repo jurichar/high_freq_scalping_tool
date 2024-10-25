@@ -14,230 +14,152 @@ Classes:
 import logging
 import pandas as pd
 
-from software.trade_utils import (
-    apply_slippage,
-    calculate_proceeds,
-    calculate_size,
-)
-
-
-class Position:
-
-    def __init__(
-        self,
-        position_type,
-        amount,
-        entry_price,
-        entry_date,
-    ):
-        """
-        Initializes a position.
-
-        Args:
-            position_type (str): Type of position ('long' or 'short').
-            amount (int): Number of shares.
-            entry_price (float): Entry price.
-            entry_date (pd.Timestamp): Entry date.
-            stop_loss (float, optional): Stop-loss level.
-            take_profit (float, optional): Take-profit level.
-        """
-        self.type = position_type
-        self.amount = amount
-        self.entry_price = entry_price
-        self.entry_date = entry_date
-        self.closed = False
-        self.exit_price = None
-        self.exit_date = None
-        self.pnl = 0.0
-
-    def close(self, exit_price: float, exit_date: pd.Timestamp) -> None:
-        """
-        Closes the position and calculates the pnl (profit or loss).
-
-        Args:
-            exit_price (float): Exit price.
-            exit_date (pd.Timestamp): Exit date.
-
-        Example:
-            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
-            >>> pos.close(110, pd.Timestamp('2023-02-01'))
-            >>> pos.pnl
-            100
-            >>> pos.closed
-            True
-
-            >>> pos = Position('short', 5, 150, pd.Timestamp('2023-01-01'))
-            >>> pos.close(140, pd.Timestamp('2023-02-01'))
-            >>> pos.pnl
-            50
-            >>> pos.closed
-            True
-        """
-        self.exit_price = exit_price
-        self.exit_date = exit_date
-        self.closed = True
-
-        if self.type == "long":
-            self.pnl = (self.exit_price - self.entry_price) * self.amount
-        elif self.type == "short":
-            self.pnl = (self.entry_price - self.exit_price) * self.amount
+from software.trade_utils import apply_slippage, calculate_size_in_usdt
+from software.position import Position
 
 
 class TradingExecutor:
+    """
+    Manages the execution of trading signals and the portfolio.
+    """
 
     def __init__(
         self,
         initial_cash,
         transaction_cost=0.001,
         leverage=1,
-        trailing_pct=None,
-        slippage_pct=0.0005,
+        slippage_pct=0.005,
         risk_per_trade=0.01,
     ):
         """
         Initializes the TradingExecutor to manage trades and the portfolio.
 
         Args:
-            initial_cash (float): Initial cash amount.
-            transaction_cost (float): Transaction cost as a fraction of the trade (e.g., 0.001 for 0.1%).
-            leverage (float): Leverage factor (e.g., 1 = no leverage, 2 = leverage x2).
-            trailing_pct (float, optional): Trailing stop-loss percentage.
+            initial_cash (float): Starting cash for the portfolio.
+            transaction_cost (float): Transaction cost (e.g., 0.001 for 0.1%).
+            leverage (float): Leverage factor.
             slippage_pct (float): Slippage percentage.
-            risk_per_trade (float): Fraction of portfolio to risk per trade (e.g., 0.01 for 1%).
+            risk_per_trade (float): The percentage of the capital you are willing to risk per trade.
         """
         self.cash = initial_cash
         self.transaction_cost = transaction_cost
         self.leverage = leverage
-        self.trailing_pct = trailing_pct
-        self.positions = []
-        self.history = []
         self.slippage_pct = slippage_pct
         self.risk_per_trade = risk_per_trade
-
-    def calculate_position_size(self, price: float, stop_loss_pct: float) -> float:
-        """
-        Calculates the optimal position size based on available risk and cash.
-        If I have $10000 and I want to risk 1% of my equity on a trade of a stock priced at $100,
-        I can buy 50 shares with a stop-loss of 5%.
-
-        Args:
-            price (float): Current price of the asset.
-            stop_loss_pct (float): Stop-loss percentage.
-
-        Returns:
-            float: The maximum position size.
-
-        Example:
-            >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.calculate_position_size(100, 0.05)
-            50.0
-        """
-        return calculate_size(
-            price=price,
-            equity=self.get_total_portfolio_value(price),
-            stop_loss_pct=stop_loss_pct,
-            risk_per_trade=self.risk_per_trade,
-        )
+        self.positions = []
+        self.history = []
 
     def open_position(
         self,
         position_type: str,
         price: float,
+        stop_loss_price: float,
         date: pd.Timestamp,
-        stop_loss_pct: float,
     ) -> None:
         """
-        Opens a long or short position with dynamic sizing based on risk.
+        Opens a position (long or short).
 
         Args:
-            position_type (str): Type of position ('long' or 'short').
-            price (float): Asset price.
-            date (pd.Timestamp): Transaction date.
-            stop_loss_pct (float): Stop-loss percentage.
+            position_type (str): 'long' or 'short'.
+            price (float): Entry price.
+            date (pd.Timestamp): Entry date.
+            stop_loss_price (float): Stop-loss price.
 
         Example:
-            >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.open_position(position_type='long', price=100, date=pd.Timestamp('2023-01-01'), stop_loss_pct=0.05)
+            >>> executor = TradingExecutor(initial_cash=3000, risk_per_trade=0.02, slippage_pct=0, leverage=1)
+            >>> executor.open_position(position_type='short', price=8611.5, stop_loss_price=9156.5, date=pd.Timestamp('2023-01-01'))
             >>> len(executor.positions) == 1
             True
-            >>> executor.cash
 
-            >>> executor.open_position('short', 100, pd.Timestamp('2023-01-01'), 0.05)
+            >>> round(executor.cash, 2)
+            2051.94
+
+            >>> executor.open_position('long', 8611.5, 7847, pd.Timestamp('2023-01-02'))
             >>> len(executor.positions) == 2
             True
 
-            >>> executor = TradingExecutor(initial_cash=100)
-            >>> executor.open_position('long', 100, pd.Timestamp('2023-01-01'), 0.05)
-            >>> len(executor.positions) == 0
+            >>> round(executor.cash, 2)
+            1589.67
+
+            >>> executor.open_position('long', 100, 95, pd.Timestamp('2023-01-04'))
+            >>> len(executor.positions) == 3
             True
+
+            >>> round(executor.cash, 2)
+            953.8
         """
 
         try:
-            position_size = self.calculate_position_size(price, stop_loss_pct)
-            adjusted_price = apply_slippage(price, position_type, self.slippage_pct)
-            total_cost = adjusted_price * position_size * (1 + self.transaction_cost)
-            margin_required = total_cost / self.leverage
+            adjusted_price = apply_slippage(
+                price,
+                position_type,
+                self.slippage_pct,
+            )
+            # ~8611.5$
 
-            logging.info(f"Total Cost: {total_cost}")
-            logging.info(f"Margin Required: {margin_required}")
+            size_usdt = calculate_size_in_usdt(
+                equity=self.cash,
+                risk_per_trade=self.risk_per_trade,
+                adjusted_price=adjusted_price,
+                stop_loss_price=stop_loss_price,
+            )
+            # ~948$
 
-            if margin_required > self.cash:
+            if size_usdt > self.cash:
                 logging.warning(
-                    f"Reducing position size due to insufficient funds. Margin required: {margin_required}, Available cash: {self.cash}"
+                    "Not enough cash. Required: %s, Available: %s",
+                    size_usdt,
+                    self.cash,
                 )
-                position_size = (self.cash * self.leverage) / (
-                    price * (1 + self.transaction_cost)
-                )
-                total_cost = price * position_size * (1 + self.transaction_cost)
-                margin_required = total_cost / self.leverage
-
-            if position_size <= 0:
-                logging.warning("Position size too small. Skipping trade.")
                 return
 
-            self.cash -= margin_required
-            logging.info(f"Cash after opening position: ${self.cash:.2f}")
-
+            self.cash -= size_usdt
+            # 3000 - 948 = 2052
             position = Position(
-                position_type=position_type,
-                amount=position_size,
-                entry_price=price,
-                entry_date=date,
+                position_type,
+                size_usdt,
+                adjusted_price,
+                date,
             )
+            position.stop_loss_price = stop_loss_price
             self.positions.append(position)
 
             self.history.append(
                 {
                     "action": "open",
                     "position_type": position_type,
-                    "price": price,
-                    "amount": position_size,
+                    "price": adjusted_price,
+                    "amount": size_usdt / adjusted_price,
                     "date": date,
                 }
             )
             logging.info(
-                f"{date}: Opened {position_type} position for {position_size} shares at ${price:.2f}"
+                "%d: Opened %d position. for %d shares at %.2f",
+                date,
+                position_type,
+                adjusted_price,
+                price,
             )
-            logging.debug(f"Cash after opening position: ${self.cash:.2f}")
+            logging.debug("Cash after opening position %.2f", self.cash)
 
         except Exception as e:
-            logging.error(f"Error opening position: {e}")
-            raise RuntimeError(f"Failed to open position due to: {e}")
+            logging.error("Error opening position: %s", e)
+            raise RuntimeError(f"Failed to open position due to: {e}") from e
 
     def close_position(
         self, position: Position, price: float, date: pd.Timestamp
     ) -> None:
         """
-        Closes an existing position.
+        Closes a position and records the transaction.
 
         Args:
-            position (Position): Position object to close.
-            price (float): Current price of the asset.
-            date (pd.Timestamp): Transaction date.
+            position (Position): The position to close.
+            price (float): The exit price.
+            date (pd.Timestamp): The exit date.
 
         Example:
             >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05)
+            >>> executor.open_position('long', 100, 95, pd.Timestamp('2023-01-01'))
             >>> len(executor.positions) == 1
             True
             >>> position = executor.positions[0]
@@ -246,25 +168,34 @@ class TradingExecutor:
             True
         """
         try:
-            adjusted_price = apply_slippage(price, position.type, self.slippage_pct)
-            proceeds = calculate_proceeds(
-                adjusted_price, position.amount, self.transaction_cost
+            adjusted_price = apply_slippage(
+                price,
+                position.type,
+                self.slippage_pct,
             )
+            proceeds = adjusted_price * position.amount
             position.close(adjusted_price, date)
             self.cash += proceeds
+            self.positions.remove(position)
+
             self.history.append(
                 {
                     "action": "close",
                     "position_type": position.type,
-                    "price": adjusted_price,
+                    "price": price,
                     "amount": position.amount,
                     "date": date,
                     "pnl": position.pnl,
                 }
             )
-            self.positions.remove(position)
+
+            logging.info(
+                "Closed %s position. PnL: %.2f",
+                position.type,
+                position.pnl,
+            )
         except Exception as e:
-            logging.error(f"Error closing position: {e}")
+            raise RuntimeError(f"Failed to close position due to: {e}") from e
 
     def has_open_position(self, position_type: str) -> bool:
         """
@@ -278,43 +209,48 @@ class TradingExecutor:
         """
         return any(p.type == position_type and not p.closed for p in self.positions)
 
-    def execute_signal(self, signal, price, date, atr_stop_loss):
+    def execute_signal(
+        self,
+        signal,
+        price,
+        atr_stop_loss,
+        date,
+    ):
         """
         Execute trading signals by opening or closing positions.
         This handles both Buy Long and Buy Short, and manages exits.
 
         Args:
-            signal (int): Trading signal (1 for Buy Long, -1 for Buy Short, 2 for Exit Long, -2 for Exit Short).
+            signal (int): Trading signal (1 for Buy Long, -1 for Buy Short).
             price (float): Current price of the asset.
             date (pd.Timestamp): Current timestamp.
-            high_price (float): High price for the period.
-            low_price (float): Low price for the period.
             atr_stop_loss (float): Stop-loss based on ATR.
-            atr_take_profit (float): Take-profit based on ATR.
 
         Example:
             >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.execute_signal(1, 100, pd.Timestamp('2023-01-01'), 0.05)
+            >>> executor.execute_signal(1, 100, 5, pd.Timestamp('2023-01-01'))
         """
 
         if signal == 1:  # Buy Long signal
             if not self.has_open_position("long"):
-                self.open_position("long", price, date, atr_stop_loss / price)
+                self.open_position(
+                    position_type="long",
+                    price=price,
+                    stop_loss_price=atr_stop_loss / price,
+                    date=date,
+                )
         elif signal == -1:  # Buy Short signal
             if not self.has_open_position("short"):
-                self.open_position("short", price, date, atr_stop_loss / price)
-        elif signal == 2:  # Close Long signal
-            for position in self.positions[:]:
-                if position.type == "long" and not position.closed:
-                    self.close_position(position, price, date)
-        elif signal == -2:  # Close Short signal
-            for position in self.positions[:]:
-                if position.type == "short" and not position.closed:
-                    self.close_position(position, price, date)
+                self.open_position(
+                    position_type="short",
+                    price=price,
+                    stop_loss_price=atr_stop_loss / price,
+                    date=date,
+                )
 
     def get_total_portfolio_value(self, current_price):
         """
-        Calculates the total portfolio value.
+        Calculates the total portfolio value based on the current price.
 
         Args:
             current_price (float): Current price of the asset.
@@ -326,9 +262,9 @@ class TradingExecutor:
             >>> executor = TradingExecutor(initial_cash=10000)
             >>> executor.get_total_portfolio_value(110)
             10000.0
-            >>> executor.open_position('long', 10, pd.Timestamp('2023-01-01'), 0.05)
-            >>> executor.get_total_portfolio_value(110)
-            9099.0
+            >>> executor.open_position('long', 10, 9, pd.Timestamp('2023-01-01'))
+            >>> executor.get_total_portfolio_value(11)
+            10904.45
         """
         try:
             position_value = 0.0
@@ -341,7 +277,7 @@ class TradingExecutor:
             total_value = self.cash + position_value
             return total_value
         except Exception as e:
-            logging.error(f"Error calculating portfolio value: {e}")
+            logging.error("Error calculating total portfolio value: %s", e)
             return None
 
     def display_portfolio(self, current_price):
@@ -364,4 +300,4 @@ class TradingExecutor:
             print(f"Total Portfolio Value: ${total_value:.2f}")
             print("=" * 30 + "\n")
         except Exception as e:
-            logging.error(f"Error displaying portfolio: {e}")
+            logging.error("Error displaying portfolio: %s", e)

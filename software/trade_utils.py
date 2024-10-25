@@ -1,30 +1,40 @@
 """
-trade_utils.py 
+trade_utils.py
 """
 
 import logging
 
 
-def calculate_size(price, equity, risk_per_trade):
+def calculate_size_in_usdt(equity, risk_per_trade, adjusted_price, stop_loss_price):
     """
-    Calculate the position size based on the risk per trade and stop-loss percentage.
-    The position size is the number of units of an asset to buy or sell.
+    Calculate the position size in USD based on the stop-loss percentage.
+
+    This function calculates the position size in USD given the total trading capital,
+    risk per trade as a percentage, entry price (including slippage), and stop-loss price.
 
     Args:
-        price (float): Current price of the asset.
-        equity (float): Total equity available for trading.
-        stop_loss_pct (float): Stop-loss percentage.
-        risk_per_trade (float): Maximum risk per trade as a percentage of equity.
+        equity (float): Total capital available for trading (in USD).
+        risk_per_trade_pct (float): Maximum risk per trade as a percentage of equity (e.g., 0.02 for 2%).
+        adjusted_price (float): Entry price of the asset (adjusted for slippage).
+        stop_loss_price (float): Stop-loss price.
 
     Returns:
-        float: Position size.
+        float: Position size in USD.
 
-    Examples:
-        >>> calculate_size(price=100, equity=10000, risk_per_trade=0.01)
-        50.0
+    Example:
+        >>> calculate_size_in_usdt(equity=3000, risk_per_trade=0.02, adjusted_price=8611.5, stop_loss_price=9156.5)
+        948.0550458715596
+
+        >>> calculate_size_in_usdt(equity=2000, risk_per_trade=0.02, adjusted_price=8607.5, stop_loss_price=7847.5)
+        453.02631578947364
+
     """
+
     risk_amount = equity * risk_per_trade
-    return risk_amount / price
+    stop_loss_distance = abs(adjusted_price - stop_loss_price)
+    stop_loss_percentage = stop_loss_distance / adjusted_price
+    position_size = risk_amount / stop_loss_percentage
+    return position_size
 
 
 def apply_slippage(price, position_type, slippage_pct):
@@ -42,16 +52,16 @@ def apply_slippage(price, position_type, slippage_pct):
         float: Adjusted price after slippage.
 
     Examples:
-        >>> apply_slippage(price=100, position_type="long", slippage_pct=0.01)
-        99.0
-        >>> apply_slippage(price=100, position_type="short", slippage_pct=0.01)
-        101.0
+        >>> apply_slippage(price=100, position_type="long", slippage_pct=0.05)
+        105.0
+        >>> apply_slippage(price=100, position_type="short", slippage_pct=0.05)
+        95.0
     """
-    return (
-        price * (1 - slippage_pct)
-        if position_type == "long"
-        else price * (1 + slippage_pct)
-    )
+    if position_type == "long":
+        return price * (1 + slippage_pct)
+    if position_type == "short":
+        return price * (1 - slippage_pct)
+    raise ValueError("Position type must be 'long' or 'short'.")
 
 
 def calculate_exit_prices(
