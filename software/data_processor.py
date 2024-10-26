@@ -70,19 +70,9 @@ def load_data(
         data = pd.read_csv(file_path, parse_dates=True, index_col=0)
         return data
 
-    except FileNotFoundError as fnf_error:
-        logging.error(fnf_error)
-        raise
-
-    except pd.errors.EmptyDataError as ede_error:
-        logging.error(f"File {file_path} is empty or corrupt.")
-        raise ValueError(
-            f"File {file_path} is empty or corrupt."
-        ) from ede_error
-
     except Exception as e:
-        logging.error(f"Unexpected error occurred: {e}")
-        raise RuntimeError(f"Error in loading data: {e}") from e
+        logging.error(f"Error in loading data: {e}")
+        raise ValueError(f"Error in loading data: {e}") from e
 
 
 def clean_data(data: pd.DataFrame) -> pd.DataFrame:

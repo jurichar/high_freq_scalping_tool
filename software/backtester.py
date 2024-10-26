@@ -20,7 +20,7 @@ def run_back_test(
     transaction_cost=0.001,
     leverage=1,
     slippage_pct=0.0005,
-    risk_per_trade=0.01,
+    risk_per_trade=0.02,
     interval="1m",
     sma_period=5,
     ema_period=20,
@@ -49,13 +49,9 @@ def run_back_test(
     Returns:
         dict: Back test results including additional metrics.
     """
-    # logging.log(f"Running back tests for {ticker} from {start_date} to {end_date}...")
-
-    # logging.log("Preparing market data for backtest...")
     data = fetch_clean_data(ticker, start_date, end_date, interval)
 
     if validate_data(data):
-        # logging.log("Processing data...")
         processed_data = process_data(
             data,
             sma_period=sma_period,
@@ -65,7 +61,6 @@ def run_back_test(
             atr_period=atr_period,
         )
 
-        # logging.log("Generating buy signals...")
         strategy = Strategy(
             ema_sma_threshold=0,
             rsi_long_threshold=30,
@@ -74,7 +69,7 @@ def run_back_test(
         )
 
         data_with_signals = strategy.generate_buy_signals(processed_data)
-        print(data_with_signals["Signal"])
+        print("Signals :", data_with_signals["Signal"])
 
         transactions, equity_curve, dates = execute_trades(
             data=data_with_signals,
@@ -85,7 +80,6 @@ def run_back_test(
             risk_per_trade=risk_per_trade,
         )
 
-        # # logging.log("Evaluating performance...")
         performance_metrics = evaluate_performance(
             transactions, equity_curve, initial_cash
         )
@@ -96,7 +90,6 @@ def run_back_test(
         total_profit = final_portfolio_value - initial_cash
         print(f"Total Profit: ${total_profit:.2f}")
 
-        # # logging.log("Backtest completed successfully.")
         return {
             "transactions": transactions,
             "equity_curve": equity_curve,

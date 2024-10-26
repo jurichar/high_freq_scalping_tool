@@ -26,10 +26,10 @@ class TradingExecutor:
     def __init__(
         self,
         initial_cash,
-        transaction_cost=0.001,
-        leverage=1,
-        slippage_pct=0.005,
-        risk_per_trade=0.01,
+        transaction_cost,
+        leverage,
+        slippage_pct,
+        risk_per_trade,
     ):
         """
         Initializes the TradingExecutor to manage trades and the portfolio.
@@ -69,6 +69,7 @@ class TradingExecutor:
         Example:
             >>> executor = TradingExecutor(
             ...     initial_cash=3000,
+            ...     transaction_cost=0.001,
             ...     risk_per_trade=0.02,
             ...     slippage_pct=0,
             ...     leverage=1,
@@ -172,16 +173,26 @@ class TradingExecutor:
             date (pd.Timestamp): The exit date.
 
         Example:
-            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor = TradingExecutor(
+            ...     initial_cash=3000,
+            ...     transaction_cost=0.001,
+            ...     risk_per_trade=0.02,
+            ...     slippage_pct=0,
+            ...     leverage=1,
+            ... )
+
             >>> executor.open_position(
             ...     'long', 100, 95, pd.Timestamp('2023-01-01')
             ... )
+
             >>> len(executor.positions) == 1
             True
+
             >>> position = executor.positions[0]
             >>> executor.close_position(
             ...     position, 110, pd.Timestamp('2023-02-01')
             ... )
+
             >>> len(executor.positions) == 0
             True
         """
@@ -247,7 +258,13 @@ class TradingExecutor:
             atr_stop_loss (float): Stop-loss based on ATR.
 
         Example:
-            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor = TradingExecutor(
+            ...     initial_cash=3000,
+            ...     transaction_cost=0.001,
+            ...     risk_per_trade=0.02,
+            ...     slippage_pct=0,
+            ...     leverage=1,
+            ... )
             >>> executor.execute_signal(1, 100, 5, pd.Timestamp('2023-01-01'))
         """
 
@@ -256,7 +273,7 @@ class TradingExecutor:
                 self.open_position(
                     position_type="long",
                     price=price,
-                    stop_loss_price=atr_stop_loss - price,
+                    stop_loss_price=price - atr_stop_loss,
                     date=date,
                 )
         elif signal == -1:  # Buy Short signal
@@ -264,7 +281,7 @@ class TradingExecutor:
                 self.open_position(
                     position_type="short",
                     price=price,
-                    stop_loss_price=atr_stop_loss + price,
+                    stop_loss_price=price + atr_stop_loss,
                     date=date,
                 )
 
@@ -279,7 +296,13 @@ class TradingExecutor:
             float: Total value of the portfolio.
 
         Example:
-            >>> executor = TradingExecutor(initial_cash=10000)
+            >>> executor = TradingExecutor(
+            ...     initial_cash=10000,
+            ...     transaction_cost=0.001,
+            ...     risk_per_trade=0.01,
+            ...     slippage_pct=0.005,
+            ...     leverage=1,
+            ... )
             >>> executor.get_total_portfolio_value(110)
             10000.0
             >>> executor.open_position(

@@ -1,5 +1,6 @@
 VENV=.venv
 PYTHON=python3
+args=$(filter-out $@,$(MAKECMDGOALS))
 
 $(VENV):
 	$(PYTHON) -m venv $(VENV)
@@ -14,7 +15,7 @@ run: install
 	$(VENV)/bin/python main.py
 
 test: install
-	$(VENV)/bin/pytest
+	$(VENV)/bin/pytest $(args)
 
 update:
 	$(VENV)/bin/pip freeze > requirements.txt

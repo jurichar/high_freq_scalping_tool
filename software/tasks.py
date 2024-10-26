@@ -183,9 +183,8 @@ def execute_trades(
     ):
         signal = row["Signal"]
         price = row["Close"]
-        date = index
-
         atr_stop_loss = row["ATR"] * 2
+        date = index
 
         executor.execute_signal(
             signal,
