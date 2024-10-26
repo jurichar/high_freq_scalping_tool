@@ -25,6 +25,25 @@ class Position:
             amount (float): Number of units (or fractions).
             entry_price (float): Entry price of the asset.
             entry_date (pd.Timestamp): Date of the entry.
+
+        Example:
+            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
+            >>> pos.type
+            'long'
+            >>> pos.amount
+            10
+            >>> pos.entry_price
+            100
+            >>> pos.entry_date
+            Timestamp('2023-01-01 00:00:00')
+            >>> pos.closed
+            False
+
+            >>> pos = Position('test', 10, 100, pd.Timestamp('2023-01-01'))
+            Traceback (most recent call last):
+            ...
+            ValueError: Position type must be either 'long' or 'short'
+
         """
         self.type = position_type
         self.amount = amount
@@ -60,6 +79,11 @@ class Position:
             50
             >>> pos.closed
             True
+
+            >>> pos.close(140, pd.Timestamp('2023-02-01'))
+            Traceback (most recent call last):
+            ...
+            ValueError: Position is already closed
         """
         if self.closed:
             raise ValueError("Position is already closed")
