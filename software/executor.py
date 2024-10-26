@@ -39,7 +39,8 @@ class TradingExecutor:
             transaction_cost (float): Transaction cost (e.g., 0.001 for 0.1%).
             leverage (float): Leverage factor.
             slippage_pct (float): Slippage percentage.
-            risk_per_trade (float): The percentage of the capital you are willing to risk per trade.
+            risk_per_trade (float): The percentage of the capital you are
+            willing to risk per trade.
         """
         self.cash = initial_cash
         self.transaction_cost = transaction_cost
@@ -66,8 +67,18 @@ class TradingExecutor:
             stop_loss_price (float): Stop-loss price.
 
         Example:
-            >>> executor = TradingExecutor(initial_cash=3000, risk_per_trade=0.02, slippage_pct=0, leverage=1)
-            >>> executor.open_position(position_type='short', price=8611.5, stop_loss_price=9156.5, date=pd.Timestamp('2023-01-01'))
+            >>> executor = TradingExecutor(
+            ...     initial_cash=3000,
+            ...     risk_per_trade=0.02,
+            ...     slippage_pct=0,
+            ...     leverage=1,
+            ... )
+            >>> executor.open_position(
+            ...     position_type='short',
+            ...     price=8611.5,
+            ...     stop_loss_price=9156.5,
+            ...     date=pd.Timestamp('2023-01-01')
+            ... )
             >>> len(executor.positions) == 1
             True
 
@@ -162,11 +173,15 @@ class TradingExecutor:
 
         Example:
             >>> executor = TradingExecutor(initial_cash=10000)
-            >>> executor.open_position('long', 100, 95, pd.Timestamp('2023-01-01'))
+            >>> executor.open_position(
+            ...     'long', 100, 95, pd.Timestamp('2023-01-01')
+            ... )
             >>> len(executor.positions) == 1
             True
             >>> position = executor.positions[0]
-            >>> executor.close_position(position, 110, pd.Timestamp('2023-02-01'))
+            >>> executor.close_position(
+            ...     position, 110, pd.Timestamp('2023-02-01')
+            ... )
             >>> len(executor.positions) == 0
             True
         """
@@ -210,7 +225,9 @@ class TradingExecutor:
         Returns:
             bool: True if there is an open position, False otherwise.
         """
-        return any(p.type == position_type and not p.closed for p in self.positions)
+        return any(
+            p.type == position_type and not p.closed for p in self.positions
+        )
 
     def execute_signal(
         self,
@@ -265,7 +282,9 @@ class TradingExecutor:
             >>> executor = TradingExecutor(initial_cash=10000)
             >>> executor.get_total_portfolio_value(110)
             10000.0
-            >>> executor.open_position('long', 8611.5, 7847, pd.Timestamp('2023-01-02'))
+            >>> executor.open_position(
+            ...     'long', 8611.5, 7847, pd.Timestamp('2023-01-02')
+            ... )
             >>> round(executor.get_total_portfolio_value(9000), 2)
             10042.78
         """
