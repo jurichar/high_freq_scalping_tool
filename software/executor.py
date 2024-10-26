@@ -300,7 +300,7 @@ class TradingExecutor:
                     position_value += position.entry_price * amount + profit
             total_value = self.cash + position_value
             return total_value
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError) as e:
             logging.error("Error calculating total portfolio value: %s", e)
             return None
 
@@ -319,9 +319,10 @@ class TradingExecutor:
             print(f"Open Positions: {len(self.positions)}")
             for position in self.positions:
                 print(
-                    f" - {position.type.capitalize()} {position.amount} shares at ${position.entry_price:.2f}"
+                    f" - {position.type.capitalize()} {position.amount}\
+                        shares at ${position.entry_price:.2f}"
                 )
             print(f"Total Portfolio Value: ${total_value:.2f}")
             print("=" * 30 + "\n")
-        except Exception as e:
+        except (AttributeError, TypeError, ValueError) as e:
             logging.error("Error displaying portfolio: %s", e)

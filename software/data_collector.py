@@ -3,7 +3,8 @@ data_collector.py
 
 Module for collecting stock data from the Yahoo Finance API using yfinance.
 
-This module provides functions to retrieve historical data for a specific stock ticker and save the data for further analysis.
+This module provides functions to retrieve historical data
+for a specific stock ticker and save the data for further analysis.
 """
 
 import yfinance as yf
@@ -20,11 +21,13 @@ def get_stock_data(
     interval: str = "1d",
 ):
     """
-    Retrieve historical data for a given stock ticker and optionally save it to a CSV file.
+    Retrieve historical data for a given stock ticker
+    and optionally save it to a CSV file.
 
     Args:
         ticker (str): The stock ticker symbol (e.g., 'MSFT').
-        period (str): The period for which to retrieve data (e.g., '5d', '1mo').
+        period (str): The period for which to retrieve data
+        (e.g., '5d', '1mo').
         save_to_csv (bool): If True, save the data to a CSV file.
         output_dir (str): Directory where the CSV file should be saved.
 
@@ -62,7 +65,8 @@ def get_data_for_period(
     output_dir: str = "data/raw/",
 ):
     """
-    Retrieve historical data for a given stock ticker within a specified date range.
+    Retrieve historical data for a given stock ticker within
+    a specified date range.
 
     Args:
         ticker (str): The stock ticker symbol (e.g., 'MSFT').
@@ -76,7 +80,9 @@ def get_data_for_period(
         pandas.DataFrame: A DataFrame containing the historical stock data.
 
     Example:
-        >>> data = get_data_for_period("MSFT", "2021-01-01", "2021-12-31", interval="1d")
+        >>> data = get_data_for_period(
+        ...     "MSFT", "2021-01-01", "2021-12-31", interval="1d"
+        ... )
         >>> isinstance(data, pd.DataFrame)
         True
         >>> 'Close' in data.columns
@@ -90,9 +96,11 @@ def get_data_for_period(
 
         if save_to_csv and not data.empty:
             os.makedirs(output_dir, exist_ok=True)
+            start_date = start_date.strftime("%Y-%m-%d")
+            end_date = end_date.strftime("%Y-%m-%d")
             csv_file = os.path.join(
                 output_dir,
-                f"{ticker}_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}.csv",
+                f"{ticker}_{start_date}_{end_date}.csv",
             )
             data.to_csv(csv_file)
             logging.log(f"Data saved to {csv_file}")
