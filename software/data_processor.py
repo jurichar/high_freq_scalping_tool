@@ -3,13 +3,14 @@ data_processor.py
 
 Module for cleaning and processing stock data.
 
-This module provides functions to load stock data, clean it, add technical indicators,
-normalize the data, and save the processed data.
+This module provides functions to load stock data, clean it,
+add technical indicators, normalize the data, and save the processed data.
 
 Functions:
 - load_data: Load stock data from a CSV file.
 - clean_data: Clean the stock data by handling missing values.
-- add_technical_indicators: Add technical indicators like SMA and RSI to the data.
+- add_technical_indicators: Add technical indicators like SMA and
+    RSI to the data.
 - normalize_data: Normalize the stock data using Min-Max scaling.
 - save_processed_data: Save the processed stock data to a CSV file.
 - process_data: Cleans data and adds technical indicators.
@@ -42,7 +43,8 @@ def load_data(
 
     Raises:
         FileNotFoundError: If the CSV file does not exist.
-        ValueError: If ticker is not alphanumeric or the file is empty or corrupt.
+        ValueError: If ticker is not alphanumeric or
+            the file is empty or corrupt.
         RuntimeError: For any other errors.
 
     Tests:
@@ -60,7 +62,9 @@ def load_data(
 
         if not os.path.exists(file_path):
             raise FileNotFoundError(
-                f"File {file_path} not found. Please run data_collector.py with {ticker} and {period} period."
+                f"File {file_path} not found.\
+                Please run data_collector.py\
+                with {ticker} and {period} period."
             )
 
         data = pd.read_csv(file_path, parse_dates=True, index_col=0)
@@ -72,7 +76,9 @@ def load_data(
 
     except pd.errors.EmptyDataError as ede_error:
         logging.error(f"File {file_path} is empty or corrupt.")
-        raise ValueError(f"File {file_path} is empty or corrupt.") from ede_error
+        raise ValueError(
+            f"File {file_path} is empty or corrupt."
+        ) from ede_error
 
     except Exception as e:
         logging.error(f"Unexpected error occurred: {e}")
@@ -114,7 +120,12 @@ def clean_data(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def add_technical_indicators(
-    data, sma_period=5, ema_period=20, rsi_period=14, bbands_period=20, atr_period=14
+    data,
+    sma_period=5,
+    ema_period=20,
+    rsi_period=14,
+    bbands_period=20,
+    atr_period=14,
 ) -> pd.DataFrame:
     """
     Add technical indicators to the stock data.
@@ -133,14 +144,21 @@ def add_technical_indicators(
         pandas.DataFrame: A DataFrame with added technical indicators.
 
     Raises:
-        ValueError: If input data is not a DataFrame or required columns are missing.
+        ValueError: If input data is not a DataFrame or
+            required columns are missing.
         RuntimeError: For unexpected errors.
 
     Tests:
         >>> data = pd.DataFrame({
-        ...    "Close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
-        ...    "High": [105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138],
-        ...    "Low": [95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128],
+        ...    "Close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+        ...     111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+        ...     123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
+        ...    "High": [105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+        ...     116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
+        ...     128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138],
+        ...    "Low": [95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+        ...     107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118,
+        ...     119, 120, 121, 122, 123, 124, 125, 126, 127, 128],
         ... })
         >>> data_with_indicators = add_technical_indicators(data)
         >>> 'SMA' in data_with_indicators.columns
@@ -160,7 +178,8 @@ def add_technical_indicators(
         required_columns = ["Close", "High", "Low"]
         if not all(col in data.columns for col in required_columns):
             raise ValueError(
-                f"Data must contain the following columns: {', '.join(required_columns)}"
+                f"Data must contain the following columns:\
+                    {', '.join(required_columns)}"
             )
 
         data["SMA"] = ta.sma(data["Close"], length=sma_period)
@@ -203,7 +222,9 @@ def normalize_data(data: pd.DataFrame) -> pd.DataFrame:
         RuntimeError: For unexpected errors.
 
     Tests:
-        >>> data = pd.DataFrame({"Close": [100, 101, 102], "Volume": [1000, 1100, 1200]})
+        >>> data = pd.DataFrame({
+        ...     "Close": [100, 101, 102], "Volume": [1000, 1100, 1200]
+        ... })
         >>> normalized_data = normalize_data(data)
         >>> normalized_data['Close'].min(), normalized_data['Close'].max()
         (0.0, 1.0)
@@ -214,13 +235,17 @@ def normalize_data(data: pd.DataFrame) -> pd.DataFrame:
         if not isinstance(data, pd.DataFrame):
             raise ValueError("Input must be a pandas DataFrame")
 
-        numeric_cols = data.select_dtypes(include=["float64", "int64"]).columns.tolist()
+        numeric_cols = data.select_dtypes(
+            include=["float64", "int64"]
+        ).columns.tolist()
 
         if not numeric_cols:
             raise ValueError("No numeric columns found for normalization")
 
         cols_to_exclude = ["Volume", "Dividends", "Stock Splits"]
-        cols_to_normalize = [col for col in numeric_cols if col not in cols_to_exclude]
+        cols_to_normalize = [
+            col for col in numeric_cols if col not in cols_to_exclude
+        ]
 
         data[cols_to_normalize] = (
             data[cols_to_normalize] - data[cols_to_normalize].min()
@@ -259,7 +284,9 @@ def save_processed_data(
             raise ValueError("Input must be a pandas DataFrame")
 
         os.makedirs(output_dir, exist_ok=True)
-        file_path = os.path.join(output_dir, f"{ticker}_{period}_processed.csv")
+        file_path = os.path.join(
+            output_dir, f"{ticker}_{period}_processed.csv"
+        )
         data.to_csv(file_path)
     except Exception as e:
         logging.error(f"Error in saving processed data: {e}")
@@ -277,7 +304,8 @@ def process_data(
     atr_period=14,
 ) -> pd.DataFrame:
     """
-    Process stock data by cleaning and adding technical indicators, then save it.
+    Process stock data by cleaning and adding technical indicators,
+    then save it.
 
     Args:
         data (pd.DataFrame): The stock data to process.
@@ -292,9 +320,15 @@ def process_data(
 
     Tests:
         >>> data = pd.DataFrame({
-        ...    "Close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
-        ...    "High": [105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138],
-        ...    "Low": [95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128],
+        ...    "Close": [100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+        ...     111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122,
+        ...     123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133],
+        ...    "High": [105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
+        ...     116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
+        ...     128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138],
+        ...    "Low": [95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+        ...     107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118,
+        ...     119, 120, 121, 122, 123, 124, 125, 126, 127, 128],
         ... })
         >>> processed_data = process_data(data, "MSFT", "3mo")
         >>> 'SMA' in processed_data.columns
