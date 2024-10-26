@@ -107,16 +107,16 @@ def execute_trades(
     for index, row in tqdm(data.iterrows(), total=len(data), desc="Executing trades"):
         signal = row["Signal"]
         price = row["Close"]
-        high_price = row["High"]
-        low_price = row["Low"]
         date = index
-        # eg: buy long, at 100$ with hp 105$ and lp 95$ at 19-01-2023
 
         atr_stop_loss = row["ATR"] * 2
         atr_take_profit = row["ATR"] * 4
 
         executor.execute_signal(
-            signal, price, date, high_price, low_price, atr_stop_loss, atr_take_profit
+            signal,
+            price,
+            atr_stop_loss,
+            date,
         )
 
         if executor.history and (

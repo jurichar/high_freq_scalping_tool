@@ -115,11 +115,14 @@ class TradingExecutor:
 
             self.cash -= size_usdt
             # 3000 - 948 = 2052
+            amount = size_usdt / adjusted_price
+            # 948 / 8611.5 = 0.11BTC
+
             position = Position(
-                position_type,
-                size_usdt,
-                adjusted_price,
-                date,
+                position_type=position_type,
+                amount=amount,
+                entry_price=adjusted_price,
+                entry_date=date,
             )
             position.stop_loss_price = stop_loss_price
             self.positions.append(position)
@@ -129,7 +132,7 @@ class TradingExecutor:
                     "action": "open",
                     "position_type": position_type,
                     "price": adjusted_price,
-                    "amount": size_usdt / adjusted_price,
+                    "amount": amount,
                     "date": date,
                 }
             )
@@ -236,7 +239,7 @@ class TradingExecutor:
                 self.open_position(
                     position_type="long",
                     price=price,
-                    stop_loss_price=atr_stop_loss / price,
+                    stop_loss_price=atr_stop_loss - price,
                     date=date,
                 )
         elif signal == -1:  # Buy Short signal
@@ -244,7 +247,7 @@ class TradingExecutor:
                 self.open_position(
                     position_type="short",
                     price=price,
-                    stop_loss_price=atr_stop_loss / price,
+                    stop_loss_price=atr_stop_loss + price,
                     date=date,
                 )
 
@@ -262,18 +265,20 @@ class TradingExecutor:
             >>> executor = TradingExecutor(initial_cash=10000)
             >>> executor.get_total_portfolio_value(110)
             10000.0
-            >>> executor.open_position('long', 10, 9, pd.Timestamp('2023-01-01'))
-            >>> executor.get_total_portfolio_value(11)
-            10904.45
+            >>> executor.open_position('long', 8611.5, 7847, pd.Timestamp('2023-01-02'))
+            >>> round(executor.get_total_portfolio_value(9000), 2)
+            10042.78
         """
         try:
             position_value = 0.0
             for position in self.positions:
                 amount = position.amount
                 if position.type == "long":
-                    position_value += (current_price - position.entry_price) * amount
+                    profit = (current_price - position.entry_price) * amount
+                    position_value += position.entry_price * amount + profit
                 elif position.type == "short":
-                    position_value += (position.entry_price - current_price) * amount
+                    profit += (position.entry_price - current_price) * amount
+                    position_value += position.entry_price * amount + profit
             total_value = self.cash + position_value
             return total_value
         except Exception as e:
