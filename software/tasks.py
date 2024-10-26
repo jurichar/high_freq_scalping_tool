@@ -1,12 +1,13 @@
 """
 tasks.py
 
-Module for orchestrating the key operations of the trading bot, such as data collection,
-processing, and back testing.
+Module for orchestrating the key operations of the trading bot,
+such as data collection, processing, and back testing.
 
 Functions:
 - collect_and_save_data: Collects data for a specific period and saves it.
-- run_back test: Runs a back test using historical data and displays performance metrics.
+- run_back test: Runs a back test using historical data and
+    displays performance metrics.
 """
 
 import logging
@@ -29,6 +30,20 @@ def fetch_clean_data(ticker, start_date, end_date, interval="1d"):
 
     Returns:
         pd.DataFrame: DataFrame with historical stock data.
+
+    Example:
+        >>> df = fetch_clean_data("AAPL", "2021-01-01", "2021-12-31")
+        >>> df.shape[1]
+        7
+        >>> 'Open' in df.columns
+        True
+        >>> df.empty
+        False
+
+        >>> df = fetch_clean_data("AAPL", "2021-01-01", "2021-01-01")
+        >>> df.empty
+        True
+
     """
     data = get_data_for_period(
         ticker=ticker,
@@ -43,7 +58,8 @@ def fetch_clean_data(ticker, start_date, end_date, interval="1d"):
         return pd.DataFrame()
 
     logging.info(
-        f"Data for {ticker} from {start_date} to {end_date} fetched successfully."
+        f"Data for {ticker} from {start_date} to {end_date}\
+            fetched successfully."
     )
 
     return data
@@ -65,13 +81,34 @@ def build_backtest_report(
         transactions (list): List of transaction dictionaries.
         equity_curve (list): List of equity values over time.
         signals (pd.DataFrame): DataFrame of trading signals.
-        performance_metrics (dict): Performance metrics of the trading strategy.
+        performance_metrics (dict): Performance metrics
+            of the trading strategy.
         start_date (str): Start date of the backtest.
         end_date (str): End date of the backtest.
         num_frames (int): Number of data frames (rows of data).
 
     Returns:
         dict: Back test results report.
+
+    Example:
+        >>> transactions = [
+        ...     {"date": "2021-01-01", "type": "buy", "price": 100},
+        ...     {"date": "2021-01-02", "type": "sell", "price": 110},
+        ... ]
+        >>> equity_curve = [100, 110]
+        >>> signals = pd.DataFrame({"Signal": [1, -1]})
+        >>> performance_metrics = {"total_return": 0.1}
+        >>> start_date = "2021-01-01"
+        >>> end_date = "2021-01-02"
+        >>> num_frames = 2
+        >>> report = build_backtest_report(
+        ...     transactions, equity_curve, signals, performance_metrics,
+        ...     start_date, end_date, num_frames
+        ... )
+        >>> report["num_operations"]
+        2
+        >>> report["end_date"]
+        '2021-01-02'
     """
     num_operations = len(transactions)
 
@@ -88,8 +125,45 @@ def build_backtest_report(
 
 
 def execute_trades(
-    data, initial_cash, transaction_cost, leverage, slippage_pct, risk_per_trade
+    data,
+    initial_cash,
+    transaction_cost,
+    leverage,
+    slippage_pct,
+    risk_per_trade,
 ):
+    """
+    Execute trades based on the trading signals and data.
+
+    Args:
+        data (pd.DataFrame): DataFrame with historical stock data.
+        initial_cash (float): Initial capital for trading.
+        transaction_cost (float): Cost per transaction.
+        leverage (float): Leverage used in trading.
+        slippage_pct (float): Slippage percentage.
+        risk_per_trade (float): Maximum risk per trade as a percentage.
+
+    Returns:
+        tuple: A tuple containing the transactions, equity curve, and dates.
+
+    Example:
+        >>> data = pd.DataFrame({
+        ...     "Close": [100, 101, 102],
+        ...     "Signal": [1, -1, 0],
+        ...     "ATR": [2, 2.1, 2.2]
+        ... })
+        >>> transactions, equity_curve, dates = execute_trades(
+        ...     data, initial_cash=1000, transaction_cost=0.01,
+        ...     leverage=2, slippage_pct=0.01, risk_per_trade=0.02
+        ... )
+        >>> len(transactions)
+        2
+        >>> len(equity_curve)
+        3
+        >>> len(dates)
+        3
+    """
+
     executor = TradingExecutor(
         initial_cash=initial_cash,
         transaction_cost=transaction_cost,
@@ -104,13 +178,14 @@ def execute_trades(
     equity_curve = []
     dates = []
 
-    for index, row in tqdm(data.iterrows(), total=len(data), desc="Executing trades"):
+    for index, row in tqdm(
+        data.iterrows(), total=len(data), desc="Executing trades"
+    ):
         signal = row["Signal"]
         price = row["Close"]
         date = index
 
         atr_stop_loss = row["ATR"] * 2
-        atr_take_profit = row["ATR"] * 4
 
         executor.execute_signal(
             signal,
