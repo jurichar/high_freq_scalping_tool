@@ -19,4 +19,7 @@ test: install
 update:
 	$(VENV)/bin/pip freeze > requirements.txt
 
-.PHONY: install clear run test
+coverage: install
+	$(VENV)/bin/pytest --cov=./ --cov-report=term-missing
+
+.PHONY: install clear run test update coverage

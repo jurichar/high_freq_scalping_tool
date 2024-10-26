@@ -18,6 +18,13 @@ def validate_data(data):
 
     Returns:
         bool: True if the data is valid, False otherwise.
+
+    Example:
+        >>> data = pd.DataFrame({'Close': [100, 101, 102]})
+        >>> validate_data(data)
+        True
+        >>> validate_data(None)
+        False
     """
 
     if not isinstance(data, pd.DataFrame) or data.empty:
