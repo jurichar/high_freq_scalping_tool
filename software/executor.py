@@ -116,6 +116,7 @@ class TradingExecutor:
                 stop_loss_price=stop_loss_price,
             )
             # ~948$
+            print("Size in USDT: ", size_usdt)
 
             if size_usdt > self.cash:
                 logging.warning(
@@ -129,6 +130,8 @@ class TradingExecutor:
             # 3000 - 948 = 2052
             amount = size_usdt / adjusted_price
             # 948 / 8611.5 = 0.11BTC
+
+            print("Amount: ", amount, "BTC/USDT")
 
             position = Position(
                 position_type=position_type,
@@ -147,13 +150,6 @@ class TradingExecutor:
                     "amount": amount,
                     "date": date,
                 }
-            )
-            logging.info(
-                "%d: Opened %d position. for %d shares at %.2f",
-                date,
-                position_type,
-                adjusted_price,
-                price,
             )
             logging.debug("Cash after opening position %.2f", self.cash)
 
@@ -196,6 +192,7 @@ class TradingExecutor:
             >>> len(executor.positions) == 0
             True
         """
+
         try:
             adjusted_price = apply_slippage(
                 price,
@@ -205,13 +202,12 @@ class TradingExecutor:
             proceeds = adjusted_price * position.amount
             position.close(adjusted_price, date)
             self.cash += proceeds
-            self.positions.remove(position)
 
             self.history.append(
                 {
                     "action": "close",
                     "position_type": position.type,
-                    "price": price,
+                    "price": adjusted_price,
                     "amount": position.amount,
                     "date": date,
                     "pnl": position.pnl,
@@ -269,19 +265,24 @@ class TradingExecutor:
         """
 
         if signal == 1:  # Buy Long signal
+            print("Buy Long signal")
             if not self.has_open_position("long"):
+                stop_loss_price = price - atr_stop_loss
                 self.open_position(
                     position_type="long",
                     price=price,
-                    stop_loss_price=price - atr_stop_loss,
+                    stop_loss_price=stop_loss_price,
                     date=date,
                 )
         elif signal == -1:  # Buy Short signal
             if not self.has_open_position("short"):
+                print("Buy Short signal")
+                stop_loss_price = price + atr_stop_loss
+                print("Stop loss price: ", stop_loss_price)
                 self.open_position(
                     position_type="short",
                     price=price,
-                    stop_loss_price=price + atr_stop_loss,
+                    stop_loss_price=stop_loss_price,
                     date=date,
                 )
 
@@ -319,7 +320,7 @@ class TradingExecutor:
                     profit = (current_price - position.entry_price) * amount
                     position_value += position.entry_price * amount + profit
                 elif position.type == "short":
-                    profit += (position.entry_price - current_price) * amount
+                    profit = (position.entry_price - current_price) * amount
                     position_value += position.entry_price * amount + profit
             total_value = self.cash + position_value
             return total_value
@@ -349,3 +350,42 @@ class TradingExecutor:
             print("=" * 30 + "\n")
         except (AttributeError, TypeError, ValueError) as e:
             logging.error("Error displaying portfolio: %s", e)
+
+    # def update_positions(self, price, date):
+    #     positions_to_close = []
+    #     for position in self.positions:
+    #         if not position.closed:
+    #             if (
+    #                 position.type == "long"
+    #                 and price <= position.stop_loss_price
+    #             ):
+    #                 print(f"Stop-loss hit for long position at {price}")
+    #                 self.close_position(position, price, date)
+    #                 positions_to_close.append(position)
+    #             elif (
+    #                 position.type == "short"
+    #                 and price >= position.stop_loss_price
+    #             ):
+    #                 print(f"Stop-loss hit for short position at {price}")
+    #                 self.close_position(position, price, date)
+    #                 positions_to_close.append(position)
+
+    #             # Add take-profit logic here
+    #             if (
+    #                 position.type == "long"
+    #                 and price >= position.take_profit_price
+    #             ):
+    #                 print(f"Take-profit hit for long position at {price}")
+    #                 self.close_position(position, price, date)
+    #                 positions_to_close.append(position)
+    #             elif (
+    #                 position.type == "short"
+    #                 and price <= position.take_profit_price
+    #             ):
+    #                 print(f"Take-profit hit for short position at {price}")
+    #                 self.close_position(position, price, date)
+    #                 positions_to_close.append(position)
+
+    #     # Remove closed positions from the list
+    #     for position in positions_to_close:
+    #         self.positions.remove(position)

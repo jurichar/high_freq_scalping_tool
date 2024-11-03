@@ -41,12 +41,32 @@ def calculate_size_in_usdt(
         ... )
         453.02631578947364
 
+        >>> calculate_size_in_usdt(
+        ...     equity=1000,
+        ...     risk_per_trade=0.02,
+        ...     adjusted_price=67000,
+        ...     stop_loss_price=66955
+        ... )
+        risk = equity * risk_per_trade
+        risk = 1000 * 0.02 = 20
+        sl = abs(adjusted_price - stop_loss_price)
+        sl = abs(67000 - 66955) = 45
+        sl_pct = sl / adjusted_price
+        sl_pct = 45 / 67000 = 0.0006716417910447761
+        position_size = risk / sl_pct
+        position_size = 20 / 0.0006716417910447761 = 29726.86567164179
+        29726.86567164179
+
+
     """
 
     risk_amount = equity * risk_per_trade
     stop_loss_distance = abs(adjusted_price - stop_loss_price)
     stop_loss_percentage = stop_loss_distance / adjusted_price
     position_size = risk_amount / stop_loss_percentage
+
+    if position_size > equity:
+        position_size = risk_amount * 2
     return position_size
 
 
