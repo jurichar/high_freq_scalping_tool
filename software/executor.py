@@ -139,6 +139,7 @@ class TradingExecutor:
                 entry_price=adjusted_price,
                 entry_date=date,
             )
+
             position.stop_loss_price = stop_loss_price
             self.positions.append(position)
 
@@ -235,6 +236,49 @@ class TradingExecutor:
         return any(
             p.type == position_type and not p.closed for p in self.positions
         )
+
+    def update_positions(self, price, date):
+        positions_to_close = []
+        for position in self.positions:
+            if not position.closed:
+                # Update stop-loss for long position
+                if position.type == "long":
+                    if price > position.entry_price:
+                        new_stop_loss = price
+                        if new_stop_loss > position.stop_loss_price:
+                            position.stop_loss_price = new_stop_loss
+
+                # Update stop-loss for short position
+                elif position.type == "short":
+                    if price < position.entry_price:
+                        new_stop_loss = price
+                        if new_stop_loss < position.stop_loss_price:
+                            position.stop_loss_price = new_stop_loss
+
+                # Check if stop-loss is hit for long position
+                if (
+                    position.type == "long"
+                    and price <= position.stop_loss_price
+                ):
+                    print(
+                        f"Stop-loss atteint pour la position longue à {price}"
+                    )
+                    self.close_position(position, price, date)
+                    positions_to_close.append(position)
+
+                # Check if stop-loss is hit for short position
+                elif (
+                    position.type == "short"
+                    and price >= position.stop_loss_price
+                ):
+                    print(
+                        f"Stop-loss atteint pour la position courte à {price}"
+                    )
+                    self.close_position(position, price, date)
+                    positions_to_close.append(position)
+
+        for position in positions_to_close:
+            self.positions.remove(position)
 
     def execute_signal(
         self,
@@ -350,42 +394,3 @@ class TradingExecutor:
             print("=" * 30 + "\n")
         except (AttributeError, TypeError, ValueError) as e:
             logging.error("Error displaying portfolio: %s", e)
-
-    # def update_positions(self, price, date):
-    #     positions_to_close = []
-    #     for position in self.positions:
-    #         if not position.closed:
-    #             if (
-    #                 position.type == "long"
-    #                 and price <= position.stop_loss_price
-    #             ):
-    #                 print(f"Stop-loss hit for long position at {price}")
-    #                 self.close_position(position, price, date)
-    #                 positions_to_close.append(position)
-    #             elif (
-    #                 position.type == "short"
-    #                 and price >= position.stop_loss_price
-    #             ):
-    #                 print(f"Stop-loss hit for short position at {price}")
-    #                 self.close_position(position, price, date)
-    #                 positions_to_close.append(position)
-
-    #             # Add take-profit logic here
-    #             if (
-    #                 position.type == "long"
-    #                 and price >= position.take_profit_price
-    #             ):
-    #                 print(f"Take-profit hit for long position at {price}")
-    #                 self.close_position(position, price, date)
-    #                 positions_to_close.append(position)
-    #             elif (
-    #                 position.type == "short"
-    #                 and price <= position.take_profit_price
-    #             ):
-    #                 print(f"Take-profit hit for short position at {price}")
-    #                 self.close_position(position, price, date)
-    #                 positions_to_close.append(position)
-
-    #     # Remove closed positions from the list
-    #     for position in positions_to_close:
-    #         self.positions.remove(position)

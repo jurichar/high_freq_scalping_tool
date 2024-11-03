@@ -12,10 +12,10 @@ class Position:
 
     def __init__(
         self,
-        position_type,
-        amount,
-        entry_price,
-        entry_date,
+        position_type: str,
+        amount: float,
+        entry_price: float,
+        entry_date: pd.Timestamp,
     ):
         """
         Initializes a position.
@@ -27,7 +27,7 @@ class Position:
             entry_date (pd.Timestamp): Date of the entry.
 
         Example:
-            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
+            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'), 5)
             >>> pos.type
             'long'
             >>> pos.amount
@@ -53,6 +53,7 @@ class Position:
         self.exit_price = None
         self.exit_date = None
         self.pnl = 0.0
+        self.stop_loss_price = 0.0
 
         if position_type not in ["long", "short"]:
             raise ValueError("Position type must be either 'long' or 'short'")

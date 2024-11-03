@@ -235,7 +235,7 @@ def plot_trades(price_data, transactions):
     plt.plot(
         signals.index,
         signals["Short"],
-        "v",
+        "^",
         markersize=8,
         color="red",
         label="Buy Short Signal",
@@ -251,7 +251,7 @@ def plot_trades(price_data, transactions):
     plt.plot(
         signals.index,
         signals["Cover"],
-        "^",
+        "v",
         markersize=8,
         color="red",
         label="Sell Short Signal",
