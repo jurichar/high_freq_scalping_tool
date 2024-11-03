@@ -140,6 +140,8 @@ class TradingExecutor:
                 entry_date=date,
             )
 
+            print("======= Position opened at: ", adjusted_price, "=======")
+
             position.stop_loss_price = stop_loss_price
             self.positions.append(position)
 
@@ -237,21 +239,41 @@ class TradingExecutor:
             p.type == position_type and not p.closed for p in self.positions
         )
 
-    def update_positions(self, price, date):
+    def update_positions(self, price, date, atr_stop_loss):
         positions_to_close = []
         for position in self.positions:
             if not position.closed:
                 # Update stop-loss for long position
                 if position.type == "long":
                     if price > position.entry_price:
-                        new_stop_loss = price
+                        ATR = atr_stop_loss
+                        new_stop_loss = price - 2 * ATR
+                        print("--------------- New stop loss: ", new_stop_loss)
+                        print(
+                            "--------------- Current stop loss: ",
+                            position.stop_loss_price,
+                        )
                         if new_stop_loss > position.stop_loss_price:
                             position.stop_loss_price = new_stop_loss
 
                 # Update stop-loss for short position
                 elif position.type == "short":
                     if price < position.entry_price:
-                        new_stop_loss = price
+                        ATR = atr_stop_loss
+                        print(
+                            "Price is less than entry price recalculating SL..."
+                        )
+                        new_stop_loss = price + 2 * ATR
+                        print(
+                            "--------------- Old stop loss: ",
+                            position.stop_loss_price,
+                            "--------------- New stop loss: ",
+                            new_stop_loss,
+                            "Price: ",
+                            price,
+                            "ATR: ",
+                            ATR,
+                        )
                         if new_stop_loss < position.stop_loss_price:
                             position.stop_loss_price = new_stop_loss
 
@@ -272,7 +294,7 @@ class TradingExecutor:
                     and price >= position.stop_loss_price
                 ):
                     print(
-                        f"Stop-loss atteint pour la position courte à {price}"
+                        f"Stop-loss atteint pour la position courte à {price} le SL est à {position.stop_loss_price}"
                     )
                     self.close_position(position, price, date)
                     positions_to_close.append(position)
@@ -310,7 +332,9 @@ class TradingExecutor:
 
         if signal == 1:  # Buy Long signal
             print("Buy Long signal")
-            if not self.has_open_position("long"):
+            if not self.has_open_position(
+                "long"
+            ) and not self.has_open_position("short"):
                 stop_loss_price = price - atr_stop_loss
                 self.open_position(
                     position_type="long",
@@ -319,8 +343,10 @@ class TradingExecutor:
                     date=date,
                 )
         elif signal == -1:  # Buy Short signal
-            if not self.has_open_position("short"):
-                print("Buy Short signal")
+            print("Buy Short signal")
+            if not self.has_open_position(
+                "short"
+            ) and not self.has_open_position("long"):
                 stop_loss_price = price + atr_stop_loss
                 print("Stop loss price: ", stop_loss_price)
                 self.open_position(
