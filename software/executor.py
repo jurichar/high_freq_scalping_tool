@@ -248,11 +248,11 @@ class TradingExecutor:
                     if price > position.entry_price:
                         ATR = atr_stop_loss
                         new_stop_loss = price - 2 * ATR
-                        print("--------------- New stop loss: ", new_stop_loss)
-                        print(
-                            "--------------- Current stop loss: ",
-                            position.stop_loss_price,
-                        )
+                        # print("--------------- New stop loss: ", new_stop_loss)
+                        # print(
+                        #     "--------------- Current stop loss: ",
+                        #     position.stop_loss_price,
+                        # )
                         if new_stop_loss > position.stop_loss_price:
                             position.stop_loss_price = new_stop_loss
 
@@ -260,20 +260,20 @@ class TradingExecutor:
                 elif position.type == "short":
                     if price < position.entry_price:
                         ATR = atr_stop_loss
-                        print(
-                            "Price is less than entry price recalculating SL..."
-                        )
+                        # print(
+                        #     "Price is less than entry price recalculating SL..."
+                        # )
                         new_stop_loss = price + 2 * ATR
-                        print(
-                            "--------------- Old stop loss: ",
-                            position.stop_loss_price,
-                            "--------------- New stop loss: ",
-                            new_stop_loss,
-                            "Price: ",
-                            price,
-                            "ATR: ",
-                            ATR,
-                        )
+                        # print(
+                        #     "--------------- Old stop loss: ",
+                        #     position.stop_loss_price,
+                        #     "--------------- New stop loss: ",
+                        #     new_stop_loss,
+                        #     "Price: ",
+                        #     price,
+                        #     "ATR: ",
+                        #     ATR,
+                        # )
                         if new_stop_loss < position.stop_loss_price:
                             position.stop_loss_price = new_stop_loss
 
@@ -282,9 +282,9 @@ class TradingExecutor:
                     position.type == "long"
                     and price <= position.stop_loss_price
                 ):
-                    print(
-                        f"Stop-loss atteint pour la position longue à {price}"
-                    )
+                    # print(
+                    #     f"Stop-loss atteint pour la position longue à {price}"
+                    # )
                     self.close_position(position, price, date)
                     positions_to_close.append(position)
 
@@ -293,9 +293,9 @@ class TradingExecutor:
                     position.type == "short"
                     and price >= position.stop_loss_price
                 ):
-                    print(
-                        f"Stop-loss atteint pour la position courte à {price} le SL est à {position.stop_loss_price}"
-                    )
+                    # print(
+                    #     f"Stop-loss atteint pour la position courte à {price} le SL est à {position.stop_loss_price}"
+                    # )
                     self.close_position(position, price, date)
                     positions_to_close.append(position)
 
@@ -331,7 +331,6 @@ class TradingExecutor:
         """
 
         if signal == 1:  # Buy Long signal
-            print("Buy Long signal")
             if not self.has_open_position(
                 "long"
             ) and not self.has_open_position("short"):
@@ -343,7 +342,6 @@ class TradingExecutor:
                     date=date,
                 )
         elif signal == -1:  # Buy Short signal
-            print("Buy Short signal")
             if not self.has_open_position(
                 "short"
             ) and not self.has_open_position("long"):

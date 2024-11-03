@@ -65,8 +65,9 @@ def calculate_size_in_usdt(
     stop_loss_percentage = stop_loss_distance / adjusted_price
     position_size = risk_amount / stop_loss_percentage
 
-    if position_size > equity:
-        position_size = risk_amount * 2
+    while position_size > equity:
+        position_size /= 2
+
     return position_size
 
 
