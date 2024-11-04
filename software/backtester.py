@@ -9,7 +9,7 @@ from software.data_processor import process_data
 from software.plotter import plot_results
 from software.tasks import execute_trades, fetch_clean_data
 from software.utils import validate_data
-from software.strategy import Strategy
+from software.strategy_buy import Strategy
 
 
 def run_back_test(

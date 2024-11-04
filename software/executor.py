@@ -14,6 +14,7 @@ Classes:
 import logging
 import pandas as pd
 
+from software.strategy_sell import check_stop_loss, update_trailing_stop
 from software.trade_utils import apply_slippage, calculate_size_in_usdt
 from software.position import Position
 
@@ -240,38 +241,22 @@ class TradingExecutor:
         )
 
     def update_positions(self, price, date, atr_stop_loss):
+        """
+        Updates the stop-loss for open positions and closes them if necessary.
+
+        Args:
+            price (float): Current price of the asset.
+            date (pd.Timestamp): Current timestamp.
+            atr_stop_loss (float): Stop-loss based on ATR.
+        """
         positions_to_close = []
         for position in self.positions:
             if not position.closed:
-                # Update stop-loss for long position
-                if position.type == "long":
-                    if price > position.entry_price:
-                        ATR = atr_stop_loss
-                        new_stop_loss = price - 2 * ATR
-                        if new_stop_loss > position.stop_loss_price:
-                            position.stop_loss_price = new_stop_loss
+                # Update trailing stop-loss for the position
+                update_trailing_stop(position, price, atr_stop_loss)
 
-                # Update stop-loss for short position
-                elif position.type == "short":
-                    if price < position.entry_price:
-                        ATR = atr_stop_loss
-                        new_stop_loss = price + 2 * ATR
-                        if new_stop_loss < position.stop_loss_price:
-                            position.stop_loss_price = new_stop_loss
-
-                # Check if stop-loss is hit for long position
-                if (
-                    position.type == "long"
-                    and price <= position.stop_loss_price
-                ):
-                    self.close_position(position, price, date)
-                    positions_to_close.append(position)
-
-                # Check if stop-loss is hit for short position
-                elif (
-                    position.type == "short"
-                    and price >= position.stop_loss_price
-                ):
+                # Check if stop-loss has been hit
+                if check_stop_loss(position, price):
                     self.close_position(position, price, date)
                     positions_to_close.append(position)
 
