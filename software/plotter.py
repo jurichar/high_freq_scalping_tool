@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
-def plot_equity_curve(equity_curve):
+def plot_equity_curve(date, equity_curve):
     """
     Plots the equity curve over time.
 
@@ -16,7 +16,7 @@ def plot_equity_curve(equity_curve):
         equity_curve (pd.Series): The equity curve of the portfolio.
     """
     plt.figure(figsize=(14, 7))
-    equity_curve.plot()
+    plt.plot(date, equity_curve)
     plt.title("Equity Curve", fontsize=16)
     plt.xlabel("Date", fontsize=14)
     plt.ylabel("Portfolio Value ($)", fontsize=14)
