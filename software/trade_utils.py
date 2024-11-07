@@ -2,16 +2,23 @@
 trade_utils.py
 """
 
+import logging
+
 
 def calculate_size_in_usdt(
-    equity, risk_per_trade, adjusted_price, stop_loss_price
+    equity,
+    risk_per_trade,
+    adjusted_price,
+    stop_loss_price,
+    max_leverage=10,
+    leverage_step=0.1,
 ):
     """
-    Calculate the position size in USD based on the stop-loss percentage.
-
-    This function calculates the position size in USD given the total
-    trading capital, risk per trade as a percentage, entry price
-    (including slippage), and stop-loss price.
+    Position size is the portion of your total account value that is
+    used in any open trade. Depending on the risk per trade.
+    The position size is calculated by multiplying your equity by
+    the risk per trade and dividing it by the price difference between
+    the entry price and the stop-loss price.
 
     Args:
         equity (float): Total capital available for trading (in USD).
@@ -29,46 +36,42 @@ def calculate_size_in_usdt(
         ...     equity=3000,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=8611.5,
-        ...     stop_loss_price=9156.5
+        ...     stop_loss_price=9156.5,
+        ...     max_leverage=10
         ... )
-        948.0550458715596
+        (0.11009174311926606, 3.669724770642202e-05)
 
         >>> calculate_size_in_usdt(
         ...     equity=2000,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=8607.5,
-        ...     stop_loss_price=7847.5
+        ...     stop_loss_price=7847.5,
+        ...     max_leverage=10
         ... )
-        453.02631578947364
+        (0.05263157894736842, 2.631578947368421e-05)
 
         >>> calculate_size_in_usdt(
-        ...     equity=1000,
+        ...     equity=100,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=67000,
-        ...     stop_loss_price=66955
+        ...     stop_loss_price=66940,
+        ...     max_leverage=10
         ... )
-        risk = equity * risk_per_trade
-        risk = 1000 * 0.02 = 20
-        sl = abs(adjusted_price - stop_loss_price)
-        sl = abs(67000 - 66955) = 45
-        sl_pct = sl / adjusted_price
-        sl_pct = 45 / 67000 = 0.0006716417910447761
-        position_size = risk / sl_pct
-        position_size = 20 / 0.0006716417910447761 = 29726.86567164179
-        29726.86567164179
-
-
+        (0.03333333333333333, 0.0003333333333333333)
     """
-
     risk_amount = equity * risk_per_trade
-    stop_loss_distance = abs(adjusted_price - stop_loss_price)
-    stop_loss_percentage = stop_loss_distance / adjusted_price
-    position_size = risk_amount / stop_loss_percentage
+    distance_in_usd = abs(stop_loss_price - adjusted_price)
+    position_size = risk_amount / distance_in_usd * adjusted_price
+    leverage_used = position_size / equity
 
-    while position_size > equity:
-        position_size /= 2
+    if leverage_used > max_leverage:
+        leverage_used = max_leverage
+        position_size = equity * leverage_used
+    else:
+        leverage_used = round(leverage_used / leverage_step) * leverage_step
+        position_size = equity * leverage_used
 
-    return position_size
+    return position_size, leverage_used
 
 
 def apply_slippage(price, position_type, slippage_pct):

@@ -108,7 +108,6 @@ class TradingExecutor:
                 position_type,
                 self.slippage_pct,
             )
-            # ~8611.5$
 
             size_usdt = calculate_size_in_usdt(
                 equity=self.cash,
@@ -116,8 +115,6 @@ class TradingExecutor:
                 adjusted_price=adjusted_price,
                 stop_loss_price=stop_loss_price,
             )
-            # ~948$
-            print("Size in USDT: ", size_usdt)
 
             if size_usdt > self.cash:
                 logging.warning(
@@ -128,11 +125,7 @@ class TradingExecutor:
                 return
 
             self.cash -= size_usdt
-            # 3000 - 948 = 2052
             amount = size_usdt / adjusted_price
-            # 948 / 8611.5 = 0.11BTC
-
-            print("Amount: ", amount, "BTC/USDT")
 
             position = Position(
                 position_type=position_type,
@@ -140,8 +133,6 @@ class TradingExecutor:
                 entry_price=adjusted_price,
                 entry_date=date,
             )
-
-            print("======= Position opened at: ", adjusted_price, "=======")
 
             position.stop_loss_price = stop_loss_price
             self.positions.append(position)
@@ -217,6 +208,9 @@ class TradingExecutor:
                     "pnl": position.pnl,
                 }
             )
+
+            if position in self.positions:
+                self.positions.remove(position)
 
             logging.info(
                 "Closed %s position. PnL: %.2f",

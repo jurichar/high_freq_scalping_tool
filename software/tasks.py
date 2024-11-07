@@ -172,14 +172,14 @@ def execute_trades(
         risk_per_trade=risk_per_trade,
     )
 
-    # data["Signal"] = [1, -1, 0, 0, 0, 0, 0, 0]
-
     transactions = []
     equity_curve = []
     dates = []
 
     for index, row in tqdm(
-        data.iterrows(), total=len(data), desc="Executing trades"
+        data.iterrows(),
+        total=len(data),
+        desc="Executing trades",
     ):
         signal = row["Signal"]
         price = row["Close"]
@@ -191,6 +191,11 @@ def execute_trades(
             price,
             atr_stop_loss,
             date,
+        )
+        executor.update_positions(
+            price,
+            date,
+            atr_stop_loss,
         )
 
         if executor.history and (

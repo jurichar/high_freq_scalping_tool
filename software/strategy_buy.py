@@ -55,7 +55,9 @@ class Strategy:
         )
         rsi_signal = np.where(data["RSI"] < self.rsi_long_threshold, 1, 0)
         bb_signal = np.where(
-            data["Close"] < (data["BollingerB_Lower"] - self.bb_threshold), 1, 0
+            data["Close"] < (data["BollingerB_Lower"] - self.bb_threshold),
+            1,
+            0,
         )
 
         final_signal = (ema_signal + rsi_signal + bb_signal) > 1
@@ -101,7 +103,9 @@ class Strategy:
         )
         rsi_signal = np.where(data["RSI"] > self.rsi_short_threshold, 1, 0)
         bb_signal = np.where(
-            data["Close"] >= (data["BollingerB_Upper"] + self.bb_threshold), 1, 0
+            data["Close"] >= (data["BollingerB_Upper"] + self.bb_threshold),
+            1,
+            0,
         )
 
         final_signal = (ema_signal + rsi_signal + bb_signal) > 1

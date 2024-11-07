@@ -27,7 +27,7 @@ class Position:
             entry_date (pd.Timestamp): Date of the entry.
 
         Example:
-            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'), 5)
+            >>> pos = Position('long', 10, 100, pd.Timestamp('2023-01-01'))
             >>> pos.type
             'long'
             >>> pos.amount
