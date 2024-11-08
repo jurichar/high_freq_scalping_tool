@@ -125,12 +125,12 @@ def build_backtest_report(
 
 
 def execute_trades(
-    data,
-    initial_cash,
-    transaction_cost,
-    leverage,
-    slippage_pct,
-    risk_per_trade,
+    data: pd.DataFrame,
+    initial_cash: float,
+    transaction_cost: float,
+    leverage: float,
+    slippage_pct: float,
+    risk_per_trade: float,
 ):
     """
     Execute trades based on the trading signals and data.
@@ -157,12 +157,16 @@ def execute_trades(
         ...     leverage=2, slippage_pct=0.01, risk_per_trade=0.02
         ... )
         >>> len(transactions)
-        2
+        1
         >>> len(equity_curve)
         3
         >>> len(dates)
         3
     """
+
+    transactions = []
+    equity_curve = []
+    dates = []
 
     executor = TradingExecutor(
         initial_cash=initial_cash,
@@ -171,10 +175,6 @@ def execute_trades(
         slippage_pct=slippage_pct,
         risk_per_trade=risk_per_trade,
     )
-
-    transactions = []
-    equity_curve = []
-    dates = []
 
     for index, row in tqdm(
         data.iterrows(),
@@ -192,6 +192,7 @@ def execute_trades(
             atr_stop_loss,
             date,
         )
+
         executor.update_positions(
             price,
             date,

@@ -10,8 +10,6 @@ def calculate_size_in_usdt(
     risk_per_trade,
     adjusted_price,
     stop_loss_price,
-    max_leverage=10,
-    leverage_step=0.1,
 ):
     """
     Position size is the portion of your total account value that is
@@ -33,45 +31,44 @@ def calculate_size_in_usdt(
 
     Example:
         >>> calculate_size_in_usdt(
+        ...     equity=1000,
+        ...     risk_per_trade=0.02,
+        ...     adjusted_price=70000,
+        ...     stop_loss_price=69000,
+        ... )
+        1380.0
+
+        >>> calculate_size_in_usdt(
         ...     equity=3000,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=8611.5,
         ...     stop_loss_price=9156.5,
-        ...     max_leverage=10
         ... )
-        (0.11009174311926606, 3.669724770642202e-05)
+        1008.06
 
         >>> calculate_size_in_usdt(
         ...     equity=2000,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=8607.5,
         ...     stop_loss_price=7847.5,
-        ...     max_leverage=10
         ... )
-        (0.05263157894736842, 2.631578947368421e-05)
+        413.03
 
         >>> calculate_size_in_usdt(
         ...     equity=100,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=67000,
-        ...     stop_loss_price=66940,
-        ...     max_leverage=10
+        ...     stop_loss_price=65000,
         ... )
-        (0.03333333333333333, 0.0003333333333333333)
+        65.0
+
     """
+    invalidation_points = (
+        abs(adjusted_price - stop_loss_price) / stop_loss_price
+    )
     risk_amount = equity * risk_per_trade
-    distance_in_usd = abs(stop_loss_price - adjusted_price)
-    position_size = risk_amount / distance_in_usd * adjusted_price
-    leverage_used = position_size / equity
-
-    if leverage_used > max_leverage:
-        leverage_used = max_leverage
-        position_size = equity * leverage_used
-    else:
-        leverage_used = round(leverage_used / leverage_step) * leverage_step
-        position_size = equity * leverage_used
-
-    return position_size, leverage_used
+    position_size_USD = risk_amount / invalidation_points
+    return round(position_size_USD, 2)
 
 
 def apply_slippage(price, position_type, slippage_pct):

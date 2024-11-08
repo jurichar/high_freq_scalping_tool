@@ -85,21 +85,21 @@ class TradingExecutor:
             True
 
             >>> round(executor.cash, 2)
-            2051.94
+            1991.94
 
             >>> executor.open_position('long', 8611.5, 7847, pd.Timestamp('2023-01-02'))
             >>> len(executor.positions) == 2
             True
 
             >>> round(executor.cash, 2)
-            1589.67
+            1583.03
 
             >>> executor.open_position('long', 100, 95, pd.Timestamp('2023-01-04'))
             >>> len(executor.positions) == 3
             True
 
             >>> round(executor.cash, 2)
-            953.8
+            981.48
         """
 
         try:
@@ -333,7 +333,7 @@ class TradingExecutor:
             ...     'long', 8611.5, 7847, pd.Timestamp('2023-01-02')
             ... )
             >>> round(executor.get_total_portfolio_value(9000), 2)
-            10042.78
+            10038.78
         """
         try:
             position_value = 0.0
