@@ -42,6 +42,19 @@ class TradingExecutor:
             slippage_pct (float): Slippage percentage.
             risk_per_trade (float): The percentage of the capital you are
             willing to risk per trade.
+
+        Example:
+            >>> executor = TradingExecutor(
+            ...     initial_cash=1000,
+            ...     transaction_cost=0.01,
+            ...     leverage=2,
+            ...     slippage_pct=0.01,
+            ...     risk_per_trade=0.02,
+            ... )
+            >>> executor.cash
+            1000
+            >>> executor.transaction_cost
+            0.01
         """
         self.cash = initial_cash
         self.transaction_cost = transaction_cost
@@ -229,6 +242,19 @@ class TradingExecutor:
 
         Returns:
             bool: True if there is an open position, False otherwise.
+
+
+        Example:
+            >>> executor = TradingExecutor(
+            ...     initial_cash=1000,
+            ...     transaction_cost=0.01,
+            ...     leverage=2,
+            ...     slippage_pct=0.01,
+            ...     risk_per_trade=0.02,
+            ... )
+            >>> executor.open_position('long', 100, 95, pd.Timestamp('2023-01-01'))
+            >>> executor.has_open_position('long')
+            True
         """
         return any(
             p.type == position_type and not p.closed for p in self.positions
@@ -242,6 +268,17 @@ class TradingExecutor:
             price (float): Current price of the asset.
             date (pd.Timestamp): Current timestamp.
             atr_stop_loss (float): Stop-loss based on ATR.
+
+        Example:
+            >>> executor = TradingExecutor(
+            ...     initial_cash=1000,
+            ...     transaction_cost=0.01,
+            ...     leverage=2,
+            ...     slippage_pct=0.01,
+            ...     risk_per_trade=0.02,
+            ... )
+            >>> executor.open_position('long', 100, 95, pd.Timestamp('2023-01-01'))
+            >>> executor.update_positions(105, pd.Timestamp('2023-01-02'), 5)
         """
         positions_to_close = []
         for position in self.positions:
@@ -357,6 +394,24 @@ class TradingExecutor:
 
         Args:
             current_price (float): Current price of the asset.
+
+        Example:
+            >>> executor = TradingExecutor(
+            ...     initial_cash=1000,
+            ...     transaction_cost=0.01,
+            ...     leverage=2,
+            ...     slippage_pct=0.01,
+            ...     risk_per_trade=0.02,
+            ... )
+            >>> executor.display_portfolio(100)
+            <BLANKLINE>
+            ==============================
+            Current Portfolio Status:
+            Cash: $1000.00
+            Open Positions: 0
+            Total Portfolio Value: $1000.00
+            ==============================
+            <BLANKLINE>
         """
         try:
             total_value = self.get_total_portfolio_value(current_price)
