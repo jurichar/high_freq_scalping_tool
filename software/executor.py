@@ -319,7 +319,36 @@ class TradingExecutor:
             ...     slippage_pct=0,
             ...     leverage=1,
             ... )
+            >>> executor.execute_signal(-1, 100, 5, pd.Timestamp('2023-01-01'))
+            >>> len(executor.positions) == 1
+            True
+            >>> executor.has_open_position('short')
+            True
+
+            >>> executor.execute_signal(1, 100, 5, pd.Timestamp('2023-01-02'))
+            >>> len(executor.positions) == 1
+            True
+            >>> executor.has_open_position('long')
+            False
+
+            >>> executor = TradingExecutor(
+            ...     initial_cash=3000,
+            ...     transaction_cost=0.001,
+            ...     risk_per_trade=0.02,
+            ...     slippage_pct=0,
+            ...     leverage=1,
+            ... )
             >>> executor.execute_signal(1, 100, 5, pd.Timestamp('2023-01-01'))
+            >>> len(executor.positions) == 1
+            True
+            >>> executor.has_open_position('long')
+            True
+
+            >>> executor.execute_signal(-1, 100, 5, pd.Timestamp('2023-01-02'))
+            >>> len(executor.positions) == 1
+            True
+            >>> executor.has_open_position('short')
+            False
         """
 
         if signal == 1:  # Buy Long signal
@@ -338,7 +367,6 @@ class TradingExecutor:
                 "short"
             ) and not self.has_open_position("long"):
                 stop_loss_price = price + atr_stop_loss
-                print("Stop loss price: ", stop_loss_price)
                 self.open_position(
                     position_type="short",
                     price=price,
