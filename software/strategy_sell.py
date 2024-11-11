@@ -5,7 +5,7 @@ from software.position import Position
 
 
 def update_trailing_stop(
-    position: Position, price: float, atr_stop_loss: float
+    position: Position, price: float, stop_loss_price: float
 ):
     """
     Update the trailing stop-loss for a given position based on the current price and ATR.
@@ -13,7 +13,7 @@ def update_trailing_stop(
     Args:
         position (Position): The position to update.
         price (float): Current price of the asset.
-        atr_stop_loss (float): ATR-based stop-loss adjustment factor.
+        stop_loss_price (float): ATR-based stop-loss adjustment factor.
 
     Examples:
         >>> position = Position("long", 1, 100, pd.Timestamp("2024-01-01"))
@@ -41,13 +41,11 @@ def update_trailing_stop(
         110
     """
     if position.type == "long":
-        new_stop_loss = price - 2 * atr_stop_loss
-        if new_stop_loss > position.stop_loss_price:
-                position.stop_loss_price = new_stop_loss
+        if stop_loss_price > position.stop_loss_price:
+                position.stop_loss_price = stop_loss_price
     elif position.type == "short":
-        new_stop_loss = price + 2 * atr_stop_loss
-        if new_stop_loss < position.stop_loss_price:
-            position.stop_loss_price = new_stop_loss
+        if stop_loss_price < position.stop_loss_price:
+            position.stop_loss_price = stop_loss_price
 
 
 def check_stop_loss(position: Position, price: float) -> bool:

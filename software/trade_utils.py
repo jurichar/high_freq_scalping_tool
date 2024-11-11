@@ -1,15 +1,13 @@
 """
 trade_utils.py
 """
-
 import logging
 
-
-def calculate_size_in_usdt(
-    equity,
-    risk_per_trade,
-    adjusted_price,
-    stop_loss_price,
+def calculate_size_in_usd(
+    account_size: float,
+    risk_per_trade: float,
+    adjusted_price: float,
+    stop_loss_price: float,
 ):
     """
     Position size is the portion of your total account value that is
@@ -19,9 +17,9 @@ def calculate_size_in_usdt(
     the entry price and the stop-loss price.
 
     Args:
-        equity (float): Total capital available for trading (in USD).
+        account_size (float): Total capital available for trading (in USD).
         risk_per_trade_pct (float): Maximum risk per trade as a percentage
-            of equity (e.g., 0.02 for 2%).
+            of account_size (e.g., 0.02 for 2%).
         adjusted_price (float): Entry price of the asset
             (adjusted for slippage).
         stop_loss_price (float): Stop-loss price.
@@ -30,45 +28,44 @@ def calculate_size_in_usdt(
         float: Position size in USD.
 
     Example:
-        >>> calculate_size_in_usdt(
-        ...     equity=1000,
+        >>> calculate_size_in_usd(
+        ...     account_size=1000,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=70000,
         ...     stop_loss_price=69000,
         ... )
-        1380.0
+        1400.0
 
-        >>> calculate_size_in_usdt(
-        ...     equity=3000,
+        >>> calculate_size_in_usd(
+        ...     account_size=3000,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=8611.5,
         ...     stop_loss_price=9156.5,
         ... )
-        1008.06
+        948.06
 
-        >>> calculate_size_in_usdt(
-        ...     equity=2000,
+        >>> calculate_size_in_usd(
+        ...     account_size=2000,
         ...     risk_per_trade=0.02,
         ...     adjusted_price=8607.5,
         ...     stop_loss_price=7847.5,
         ... )
-        413.03
+        453.03
 
-        >>> calculate_size_in_usdt(
-        ...     equity=100,
+        >>> calculate_size_in_usd(
+        ...     account_size=3000,
         ...     risk_per_trade=0.02,
-        ...     adjusted_price=67000,
-        ...     stop_loss_price=65000,
+        ...     adjusted_price=69483.06921093751,
+        ...     stop_loss_price=69533.46983426629,
         ... )
-        65.0
+        
 
     """
-    invalidation_points = (
-        abs(adjusted_price - stop_loss_price) / stop_loss_price
-    )
-    risk_amount = equity * risk_per_trade
-    position_size_USD = risk_amount / invalidation_points
-    return round(position_size_USD, 2)
+    account_risk = account_size * risk_per_trade
+    sl_size = abs(adjusted_price - stop_loss_price)
+    invalidation_point = sl_size / adjusted_price
+    position_size = account_risk / invalidation_point
+    return round(position_size, 2)
 
 
 def apply_slippage(price, position_type, slippage_pct):
@@ -169,7 +166,7 @@ def calculate_exit_prices(
     return stop_loss, take_profit, adjusted_price
 
 
-def calculate_proceeds(adjusted_price, amount, transaction_cost):
+def calculate_proceeds(adjusted_price,  transaction_cost):
     """
     Calculate the proceeds from selling an asset.
     The proceeds are the total value received after
@@ -192,7 +189,7 @@ def calculate_proceeds(adjusted_price, amount, transaction_cost):
         ... )
         9900.0
     """
-    total_value = adjusted_price * amount
+    total_value = adjusted_price
     total_cost = total_value * transaction_cost
     proceeds = total_value - total_cost
     return proceeds

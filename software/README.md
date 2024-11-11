@@ -73,3 +73,28 @@ i.e. Futures sur Actions, Futures sur Indices, Futures sur Matières premières,
 
 Sous-jacent : Actif financier sur lequel est basé un contrat dérivé (actions, indices, matières premières, devises, etc.).
 i.e. Actions, Indices, Matières premières, Devises, etc.
+
+1. Collecte et prétraitement des données de prix (BTC/USD).
+OK
+2. Calcul des indicateurs techniques (SMA, EMA, RSI, ATR, MACD, Bandes de Bollinger, etc.).
+OK
+3. Définition des signaux d’entrée pour positions longues et courtes selon la stratégie d’ouverture.
+OK
+4. Calcul des niveaux de stop-loss basés sur les indicateurs.
+
+5. Calcul de la taille des positions en fonction des stop-loss.
+OK
+6. Exécution des signaux d’achat/vente avec gestion des positions.
+OK
+7. Mise à jour des positions : ajustement des stop-loss (trailing stop), vérification des stop-loss pour fermeture.
+OK
+8. Gestion des contraintes de trading : s’assurer de ne pas ouvrir plusieurs positions simultanément.
+OK
+9. Backtesting de la stratégie sur les données historiques.
+OK
+10.   Analyse des résultats du backtest (performance, drawdown, ratios).
+OK
+11.   Optimisation des paramètres de la stratégie (régression linéaire, random forest, simulations Monte Carlo).
+12.   Intégration des appels API vers Binance pour le trading en temps réel.
+13.   Incorporation de l’IA pour améliorer et affiner les stratégies.
+14.   Déploiement du bot de trading et surveillance en temps réel.

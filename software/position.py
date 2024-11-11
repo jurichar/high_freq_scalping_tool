@@ -13,7 +13,6 @@ class Position:
     def __init__(
         self,
         position_type: str,
-        amount: float,
         entry_price: float,
         entry_date: pd.Timestamp,
     ):
@@ -46,7 +45,6 @@ class Position:
 
         """
         self.type = position_type
-        self.amount = amount
         self.entry_price = entry_price
         self.entry_date = entry_date
         self.closed = False
@@ -94,6 +92,6 @@ class Position:
         self.closed = True
 
         if self.type == "long":
-            self.pnl = (self.exit_price - self.entry_price) * self.amount
+            self.pnl = (self.exit_price - self.entry_price)
         elif self.type == "short":
-            self.pnl = (self.entry_price - self.exit_price) * self.amount
+            self.pnl = (self.entry_price - self.exit_price)

@@ -15,7 +15,7 @@ import logging
 import pandas as pd
 
 from software.strategy_sell import check_stop_loss, update_trailing_stop
-from software.trade_utils import apply_slippage, calculate_size_in_usdt
+from software.trade_utils import apply_slippage, calculate_size_in_usd
 from software.position import Position
 
 
@@ -122,8 +122,8 @@ class TradingExecutor:
                 self.slippage_pct,
             )
 
-            size_usdt = calculate_size_in_usdt(
-                equity=self.cash,
+            size_usdt = calculate_size_in_usd(
+                account_size=self.cash,
                 risk_per_trade=self.risk_per_trade,
                 adjusted_price=adjusted_price,
                 stop_loss_price=stop_loss_price,
@@ -135,16 +135,24 @@ class TradingExecutor:
                     size_usdt,
                     self.cash,
                 )
+                print("Not enough cash to open position: ",
+                    "Required:", size_usdt, "Available:", self.cash)
                 return
 
             self.cash -= size_usdt
-            amount = size_usdt / adjusted_price
-
+            print("Position size in USD:", size_usdt)
+            print("Payed price: ", size_usdt)
+            print("Cash rest: ", self.cash)
+            print("Price: ", adjusted_price)
+            print("Stop loss: ", stop_loss_price)
             position = Position(
                 position_type=position_type,
-                amount=amount,
                 entry_price=adjusted_price,
                 entry_date=date,
+            )
+
+            print(
+                f"Opened {position_type} position at ${adjusted_price:.2f} with a stop loss at ${stop_loss_price:.2f}"
             )
 
             position.stop_loss_price = stop_loss_price
@@ -155,7 +163,6 @@ class TradingExecutor:
                     "action": "open",
                     "position_type": position_type,
                     "price": adjusted_price,
-                    "amount": amount,
                     "date": date,
                 }
             )
@@ -207,7 +214,7 @@ class TradingExecutor:
                 position.type,
                 self.slippage_pct,
             )
-            proceeds = adjusted_price * position.amount
+            proceeds = adjusted_price
             position.close(adjusted_price, date)
             self.cash += proceeds
 
@@ -216,7 +223,6 @@ class TradingExecutor:
                     "action": "close",
                     "position_type": position.type,
                     "price": adjusted_price,
-                    "amount": position.amount,
                     "date": date,
                     "pnl": position.pnl,
                 }
@@ -260,14 +266,14 @@ class TradingExecutor:
             p.type == position_type and not p.closed for p in self.positions
         )
 
-    def update_positions(self, price, date, atr_stop_loss):
+    def update_positions(self, price, date, stop_loss_price):
         """
         Updates the stop-loss for open positions and closes them if necessary.
 
         Args:
             price (float): Current price of the asset.
             date (pd.Timestamp): Current timestamp.
-            atr_stop_loss (float): Stop-loss based on ATR.
+            stop_loss_price (float): Stop-loss based on ATR.
 
         Example:
             >>> executor = TradingExecutor(
@@ -283,10 +289,7 @@ class TradingExecutor:
         positions_to_close = []
         for position in self.positions:
             if not position.closed:
-                # Update trailing stop-loss for the position
-                update_trailing_stop(position, price, atr_stop_loss)
-
-                # Check if stop-loss has been hit
+                update_trailing_stop(position, price, stop_loss_price)
                 if check_stop_loss(position, price):
                     self.close_position(position, price, date)
                     positions_to_close.append(position)
@@ -294,11 +297,42 @@ class TradingExecutor:
         for position in positions_to_close:
             self.positions.remove(position)
 
+    def calculate_stop_loss(self, price, row, signal, risk_factor):
+        """
+        Calculate the stop-loss price based on the current price and ATR.
+
+        Args:
+            price (float): Current price of the asset.
+            row (pd.Series): Row of the price data.
+            signal (int): Trading signal (1 for Buy Long, -1 for Buy Short).
+
+        Returns:
+            float: Stop-loss price.
+
+        Example:
+            >>> executor = TradingExecutor(
+            ...     initial_cash=3000,
+            ...     transaction_cost=0.001,
+            ...     risk_per_trade=0.02,
+            ...     slippage_pct=0,
+            ...     leverage=1,
+            ... )
+        """
+        atr = row["ATR"]
+        minimum_stop_loss = price * risk_factor
+        if signal == 1:
+            stop_loss_price = price - (minimum_stop_loss + (atr * 2))
+        elif signal == -1:
+            stop_loss_price = price + (minimum_stop_loss + (atr * 2)) 
+        else:
+            raise ValueError("Position type must be 'long' or 'short'")
+        return stop_loss_price
+
     def execute_signal(
         self,
         signal,
         price,
-        atr_stop_loss,
+        stop_loss_price,
         date,
     ):
         """
@@ -309,7 +343,7 @@ class TradingExecutor:
             signal (int): Trading signal (1 for Buy Long, -1 for Buy Short).
             price (float): Current price of the asset.
             date (pd.Timestamp): Current timestamp.
-            atr_stop_loss (float): Stop-loss based on ATR.
+            stop_loss_price (float): Stop-loss based on ATR.
 
         Example:
             >>> executor = TradingExecutor(
@@ -350,12 +384,12 @@ class TradingExecutor:
             >>> executor.has_open_position('short')
             False
         """
-
+        
         if signal == 1:  # Buy Long signal
             if not self.has_open_position(
                 "long"
             ) and not self.has_open_position("short"):
-                stop_loss_price = price - atr_stop_loss
+                print("Opening long position")
                 self.open_position(
                     position_type="long",
                     price=price,
@@ -366,7 +400,7 @@ class TradingExecutor:
             if not self.has_open_position(
                 "short"
             ) and not self.has_open_position("long"):
-                stop_loss_price = price + atr_stop_loss
+                print("Opening short position at", price, "stop loss at", stop_loss_price)
                 self.open_position(
                     position_type="short",
                     price=price,
@@ -403,13 +437,12 @@ class TradingExecutor:
         try:
             position_value = 0.0
             for position in self.positions:
-                amount = position.amount
                 if position.type == "long":
-                    profit = (current_price - position.entry_price) * amount
-                    position_value += position.entry_price * amount + profit
+                    profit = (current_price - position.entry_price) 
+                    position_value += position.entry_price + profit
                 elif position.type == "short":
-                    profit = (position.entry_price - current_price) * amount
-                    position_value += position.entry_price * amount + profit
+                    profit = (position.entry_price - current_price)
+                    position_value += position.entry_price + profit
             total_value = self.cash + position_value
             return total_value
         except (AttributeError, TypeError, ValueError) as e:
