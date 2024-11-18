@@ -135,16 +135,16 @@ class TradingExecutor:
                     size_usdt,
                     self.cash,
                 )
-                print("Not enough cash to open position: ",
-                    "Required:", size_usdt, "Available:", self.cash)
+                print(
+                    "Not enough cash to open position: ",
+                    "Required:",
+                    size_usdt,
+                    "Available:",
+                    self.cash,
+                )
                 return
 
             self.cash -= size_usdt
-            print("Position size in USD:", size_usdt)
-            print("Payed price: ", size_usdt)
-            print("Cash rest: ", self.cash)
-            print("Price: ", adjusted_price)
-            print("Stop loss: ", stop_loss_price)
             position = Position(
                 position_type=position_type,
                 entry_price=adjusted_price,
@@ -286,16 +286,22 @@ class TradingExecutor:
             >>> executor.open_position('long', 100, 95, pd.Timestamp('2023-01-01'))
             >>> executor.update_positions(105, pd.Timestamp('2023-01-02'), 5)
         """
-        positions_to_close = []
         for position in self.positions:
             if not position.closed:
                 update_trailing_stop(position, price, stop_loss_price)
+                print(
+                    "Updated stop loss for ",
+                    position.type,
+                    " position at ",
+                    price,
+                    " and new stop loss at ",
+                    position.stop_loss_price,
+                )
                 if check_stop_loss(position, price):
+                    print(
+                        f"Closing {position.type} position at ${price:.2f}, stop loss hit at ${position.stop_loss_price:.2f}"
+                    )
                     self.close_position(position, price, date)
-                    positions_to_close.append(position)
-
-        for position in positions_to_close:
-            self.positions.remove(position)
 
     def calculate_stop_loss(self, price, row, signal, risk_factor):
         """
@@ -323,7 +329,7 @@ class TradingExecutor:
         if signal == 1:
             stop_loss_price = price - (minimum_stop_loss + (atr * 2))
         elif signal == -1:
-            stop_loss_price = price + (minimum_stop_loss + (atr * 2)) 
+            stop_loss_price = price + (minimum_stop_loss + (atr * 2))
         else:
             raise ValueError("Position type must be 'long' or 'short'")
         return stop_loss_price
@@ -384,12 +390,12 @@ class TradingExecutor:
             >>> executor.has_open_position('short')
             False
         """
-        
+
         if signal == 1:  # Buy Long signal
             if not self.has_open_position(
                 "long"
             ) and not self.has_open_position("short"):
-                print("Opening long position")
+                print("Opening long position...")
                 self.open_position(
                     position_type="long",
                     price=price,
@@ -400,7 +406,13 @@ class TradingExecutor:
             if not self.has_open_position(
                 "short"
             ) and not self.has_open_position("long"):
-                print("Opening short position at", price, "stop loss at", stop_loss_price)
+                print(
+                    "Opening short position at",
+                    price,
+                    "stop loss at",
+                    stop_loss_price,
+                    "...",
+                )
                 self.open_position(
                     position_type="short",
                     price=price,
@@ -438,10 +450,10 @@ class TradingExecutor:
             position_value = 0.0
             for position in self.positions:
                 if position.type == "long":
-                    profit = (current_price - position.entry_price) 
+                    profit = current_price - position.entry_price
                     position_value += position.entry_price + profit
                 elif position.type == "short":
-                    profit = (position.entry_price - current_price)
+                    profit = position.entry_price - current_price
                     position_value += position.entry_price + profit
             total_value = self.cash + position_value
             return total_value
