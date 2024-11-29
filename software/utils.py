@@ -1,8 +1,15 @@
-"""
-utils.py
+'''
+File: utils.py
+Project: software
+File Created: Monday, 7th October 2024 5:36:25 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:31:28 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
-Module containing utility functions for the software.
-"""
 
 import logging
 

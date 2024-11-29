@@ -1,3 +1,15 @@
+'''
+File: predictor.py
+Project: software
+File Created: Monday, 7th October 2024 5:33:41 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:12 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
+
 # """
 # predictor.py
 

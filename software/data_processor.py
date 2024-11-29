@@ -1,21 +1,14 @@
-"""
-data_processor.py
-
-Module for cleaning and processing stock data.
-
-This module provides functions to load stock data, clean it,
-add technical indicators, normalize the data, and save the processed data.
-
-Functions:
-- load_data: Load stock data from a CSV file.
-- clean_data: Clean the stock data by handling missing values.
-- add_technical_indicators: Add technical indicators like SMA and
-    RSI to the data.
-- normalize_data: Normalize the stock data using Min-Max scaling.
-- save_processed_data: Save the processed stock data to a CSV file.
-- process_data: Cleans data and adds technical indicators.
-
-"""
+'''
+File: data_processor.py
+Project: software
+File Created: Monday, 7th October 2024 7:50:00 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:29 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
 import logging
 import pandas as pd

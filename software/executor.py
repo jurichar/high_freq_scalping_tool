@@ -1,15 +1,15 @@
-"""
-executor.py
+'''
+File: executor.py
+Project: software
+File Created: Monday, 7th October 2024 5:34:54 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:25 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
-Module to execute trading orders based on generated signals.
-
-This module manages the execution of buy and sell orders, portfolio tracking,
-and applies stop-loss and take-profit mechanisms using a `Position` class.
-
-Classes:
-- Position: Represents an individual position (long or short).
-- TradingExecutor: Manages trade execution and the portfolio.
-"""
 
 import logging
 import pandas as pd

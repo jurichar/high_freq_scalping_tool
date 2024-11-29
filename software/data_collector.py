@@ -1,17 +1,19 @@
-"""
-data_collector.py
+'''
+File: data_collector.py
+Project: software
+File Created: Saturday, 12th October 2024 3:16:58 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:42 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
-Module for collecting stock data from the Yahoo Finance API using yfinance.
-
-This module provides functions to retrieve historical data
-for a specific stock ticker and save the data for further analysis.
-"""
-
-import yfinance as yf
+import yfinance as y
 import pandas as pd
 import os
 import logging
-
 
 def get_stock_data(
     ticker: str,

@@ -1,14 +1,14 @@
-"""
-tasks.py
-
-Module for orchestrating the key operations of the trading bot,
-such as data collection, processing, and back testing.
-
-Functions:
-- collect_and_save_data: Collects data for a specific period and saves it.
-- run_back test: Runs a back test using historical data and
-    displays performance metrics.
-"""
+'''
+File: tasks.py
+Project: software
+File Created: Monday, 7th October 2024 5:36:05 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:29:57 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
 import logging
 import pandas as pd

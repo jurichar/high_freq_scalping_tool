@@ -1,6 +1,17 @@
+'''
+File: strategy_buy.py
+Project: software
+File Created: Monday, 7th October 2024 5:32:45 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:07 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
+
 import numpy as np
 import pandas as pd
-
 
 class Strategy:
     def __init__(

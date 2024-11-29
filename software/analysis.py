@@ -1,8 +1,15 @@
-"""
-analysis.py
+'''
+File: analysis.py
+Project: software
+File Created: Monday, 7th October 2024 5:35:29 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:33 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
-Module for calculating performance metrics of a trading strategy.
-"""
 
 import pandas as pd
 import numpy as np

@@ -1,6 +1,14 @@
-"""
-backtester.py
-"""
+'''
+File: backtester.py
+Project: software
+File Created: Sunday, 20th October 2024 11:44:23 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:38 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
 import logging
 from software.analysis import evaluate_performance

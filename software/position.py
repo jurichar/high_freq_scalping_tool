@@ -1,9 +1,16 @@
-"""
-position.py
-"""
+'''
+File: position.py
+Project: software
+File Created: Friday, 25th October 2024 12:36:19 pm
+Author: Julien RICHARD (jurichar@student.42.fr)
+-----
+Last Modified: Friday, 29th November 2024 1:30:16 am
+Modified By: Julien RICHARD (jurichar@student.42.fr>)
+-----
+Copyright 2017 - 2024 jurichar
+'''
 
 import pandas as pd
-
 
 class Position:
     """
