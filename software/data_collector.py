@@ -4,13 +4,13 @@ Project: software
 File Created: Saturday, 12th October 2024 3:16:58 pm
 Author: Julien RICHARD (jurichar@student.42.fr)
 -----
-Last Modified: Friday, 29th November 2024 1:30:42 am
-Modified By: Julien RICHARD (jurichar@student.42.fr>)
+Last Modified: Saturday, 30th November 2024 12:48:34 pm
+Modified By: Julien RICHARD (julienrichard.emp@gmail.com>)
 -----
 Copyright 2017 - 2024 jurichar
 '''
 
-import yfinance as y
+import yfinance as yf
 import pandas as pd
 import os
 import logging
